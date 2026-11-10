@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { DocsSidebar } from "@/components/docs/sidebar";
 import { EndpointSection } from "@/components/docs/endpoint-section";
 import { CodeBlock } from "@/components/docs/code-block";
 import { Badge } from "@/components/docs/badge";
+import { BaseUrlBanner } from "@/components/docs/base-url-banner";
 
 export const metadata: Metadata = {
   title: "API Documentation - ENT-Care Location Intelligence Service",
@@ -10,7 +12,23 @@ export const metadata: Metadata = {
     "Complete API reference for integrating with the ENT-Care Location Intelligence Service.",
 };
 
-export default function DocsPage() {
+export const dynamic = "force-dynamic";
+
+async function getBaseUrl(): Promise<string> {
+  // On the server, read the actual request host so it works on any domain
+  try {
+    const headersList = await headers();
+    const host = headersList.get("host") ?? "ent-location-sys.vercel.app";
+    const proto = headersList.get("x-forwarded-proto") ?? "https";
+    return `${proto}://${host}/api/v1`;
+  } catch {
+    return "https://ent-location-sys.vercel.app/api/v1";
+  }
+}
+
+export default async function DocsPage() {
+  const baseUrl = await getBaseUrl();
+  const origin = baseUrl.replace("/api/v1", "");
   return (
     <div className="flex min-h-screen bg-white">
       <DocsSidebar />
@@ -38,9 +56,7 @@ export default function DocsPage() {
 
             <div className="mt-6 rounded-md border border-gray-200 bg-gray-50 px-5 py-4">
               <p className="text-xs text-[#5f6368] mb-2 font-medium uppercase tracking-wide">Base URL</p>
-              <code className="text-sm text-[#202124] font-mono">
-                https://ent-location-sys.vercel.app/api/v1
-              </code>
+              <BaseUrlBanner baseUrl={baseUrl} />
             </div>
           </div>
 
@@ -70,7 +86,7 @@ Authorization: Bearer your-secret-key`} />
 
             <div className="mb-5">
               <h4 className="text-sm font-medium text-[#202124] mb-3">TypeScript example</h4>
-              <CodeBlock language="typescript" filename="api-client.ts" code={`const BASE_URL = "https://ent-location-sys.vercel.app/api/v1";
+              <CodeBlock language="typescript" filename="api-client.ts" code={`const BASE_URL = "${baseUrl}";
 const API_KEY = process.env.LOCATION_SERVICE_API_KEY; // store in your app's env
 
 async function callLocationService(path: string, body: object) {
@@ -533,7 +549,7 @@ async function callLocationService(path: string, body: object) {
                 When a patient opens the app, get their browser location and call <code className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">/api/v1/nearby</code>.
               </p>
               <CodeBlock language="typescript" filename="patientApp/api/findHospitals.ts" code={`async function findNearbyHospitals(lat: number, lng: number) {
-  const res = await fetch("https://ent-location-sys.vercel.app/api/v1/nearby", {
+  const res = await fetch("${baseUrl}/nearby", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -571,7 +587,7 @@ async function callLocationService(path: string, body: object) {
   urgency: "routine" | "priority" | "emergency" = "routine"
 ) {
   const res = await fetch(
-    "https://ent-location-sys.vercel.app/api/v1/match-by-diagnosis",
+    "${baseUrl}/match-by-diagnosis",
     {
       method: "POST",
       headers: {
@@ -604,7 +620,7 @@ async function callLocationService(path: string, body: object) {
               <h3 className="text-base text-[#202124] mb-3">Hospital Desktop - look up a facility</h3>
               <CodeBlock language="typescript" filename="hospitalApp/api/getFacility.ts" code={`async function getFacilityById(id: string) {
   const res = await fetch(
-    \`https://ent-location-sys.vercel.app/api/v1/facilities/\${id}\`,
+    \`${baseUrl}/facilities/\${id}\`,
     {
       headers: {
         "X-API-Key": process.env.LOCATION_SERVICE_API_KEY ?? "",
@@ -628,7 +644,7 @@ async function callLocationService(path: string, body: object) {
                 If the user types a location instead of sharing GPS, pass it as <code className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">place</code>.
                 The service geocodes it via Nominatim (OpenStreetMap) automatically.
               </p>
-              <CodeBlock language="typescript" filename="example" code={`fetch("https://ent-location-sys.vercel.app/api/v1/nearby", {
+              <CodeBlock language="typescript" filename="example" code={`fetch("${baseUrl}/nearby", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
