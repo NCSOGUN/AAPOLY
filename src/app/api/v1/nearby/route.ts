@@ -21,7 +21,7 @@ interface NearbyRequestBody {
 }
 
 export async function POST(req: NextRequest) {
-  const authError = checkApiKey(req);
+  const authError = await checkApiKey(req);
   if (authError) return authError;
   try {
     const body: NearbyRequestBody = await req.json();

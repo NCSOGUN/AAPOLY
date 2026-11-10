@@ -24,7 +24,7 @@ Other systems (Patient PWA, Hospital Desktop App) never maintain their own hospi
 │           Location Intelligence Service             │
 │                   (Next.js on Vercel)               │
 │                                                     │
-│  /api/v1/*          ← Public API (no auth)         │
+│  /api/v1/*          ← API key protected            │
 │  /admin/*           ← Protected Admin GUI          │
 │                                                     │
 │  Prisma Client  →  Neon PostgreSQL                  │
@@ -186,6 +186,7 @@ Navigate to [http://localhost:3000/admin/login](http://localhost:3000/admin/logi
 | Add facility | `/admin/facilities/new` | Search and pin a facility on the built-in map to fill address details and coordinates; manage specialties and services |
 | Edit facility | `/admin/facilities/:id/edit` | Update any facility field, toggle accreditation |
 | Specialties | `/admin/specialties` | Create, rename, and delete specialty definitions |
+| API keys | `/admin/api-keys` | Issue, revoke, re-enable, and delete consumer-specific API keys; the full key is shown once |
 
 ### Admin API (authenticated endpoints)
 
@@ -205,6 +206,10 @@ These endpoints are used by the Admin GUI and require a valid NextAuth session:
 | PUT | `/api/admin/specialties/:id` | Update a specialty |
 | DELETE | `/api/admin/specialties/:id` | Delete a specialty |
 | GET | `/api/admin/stats` | Dashboard stats (counts) |
+| GET | `/api/admin/api-keys` | List key metadata (never returns key hashes or full key values) |
+| POST | `/api/admin/api-keys` | Create an API key; returns the full key once |
+| PATCH | `/api/admin/api-keys/:id` | Revoke or re-enable a key |
+| DELETE | `/api/admin/api-keys/:id` | Permanently delete a key |
 
 ---
 
@@ -212,7 +217,11 @@ These endpoints are used by the Admin GUI and require a valid NextAuth session:
 
 Base path: `/api/v1`
 
-No authentication required. These are the endpoints your other applications call.
+All `/api/v1/*` endpoints require an active API key in the `X-API-Key` header
+(or as a Bearer token). Create separate keys for each consuming application at
+`/admin/api-keys`. Keys are stored as bcrypt hashes and their full values are
+shown only once. Keep them in server-side environment variables; never bundle a
+key into browser-side code.
 
 ---
 

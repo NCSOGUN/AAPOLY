@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Building2, Stethoscope, LogOut, BookOpen } from "lucide-react";
+import { LayoutDashboard, Building2, Stethoscope, LogOut, BookOpen, KeyRound } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +21,11 @@ const navItems = [
     label: "Specialties",
     href: "/admin/specialties",
     icon: Stethoscope,
+  },
+  {
+    label: "API Keys",
+    href: "/admin/api-keys",
+    icon: KeyRound,
   },
 ];
 

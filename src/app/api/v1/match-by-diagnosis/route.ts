@@ -160,7 +160,7 @@ async function nearbyFallbackResponse(
 }
 
 export async function POST(req: NextRequest) {
-  const authError = checkApiKey(req);
+  const authError = await checkApiKey(req);
   if (authError) return authError;
   let validatedRequest: ValidatedMatchRequest | null = null;
   try {

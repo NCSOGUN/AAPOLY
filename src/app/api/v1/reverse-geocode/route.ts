@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { reverseGeocode } from "@/lib/geocoding";
+import { checkApiKey } from "@/lib/api-auth";
 
 export async function GET(req: NextRequest) {
+  const authError = await checkApiKey(req);
+  if (authError) return authError;
+
   const rawLatitude = req.nextUrl.searchParams.get("latitude");
   const rawLongitude = req.nextUrl.searchParams.get("longitude");
 
@@ -65,4 +69,15 @@ export async function GET(req: NextRequest) {
       { status: 502 }
     );
   }
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization, X-API-Key",
+    },
+  });
 }

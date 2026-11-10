@@ -159,6 +159,7 @@ We will build a dedicated **Location Intelligence Service** with two main interf
 #### 7.2 Admin GUI Features
 
 - Secure login for authorized staff
+- Issue, revoke, re-enable, and delete consumer-specific API keys from `/admin/api-keys`; show each raw key only once and store only its hash
 - Dashboard showing total facilities, accredited count, recent additions
 - Create / Edit / Soft-delete facilities
 - Use an interactive map in the facility form to search for a place or click/drag a pin; automatically populate the exact coordinates and reverse-geocoded address, town/LGA, state, and country (with manual field edits still available)

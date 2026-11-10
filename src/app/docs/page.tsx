@@ -64,16 +64,16 @@ export default async function DocsPage() {
           <section id="authentication" className="mb-12 pb-8 border-b border-gray-200">
             <h2 className="text-xl text-[#202124] mb-3">Authorization</h2>
             <p className="text-sm text-[#5f6368] leading-relaxed mb-5">
-              The API uses an optional API key guard. Set the{" "}
-              <code className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">API_SECRET_KEY</code>{" "}
-              environment variable on the server to enable it. When set, every request to{" "}
-              <code className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">/api/v1/*</code>{" "}
-              must include the key. When not set, the API is open (useful for development).
+              Every request to the API requires an API key. An administrator can create a
+              consumer-specific key in{" "}
+              <code className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">/admin/api-keys</code>.
+              The full key is shown once; store it securely in the calling application&apos;s
+              server-side environment and never expose it in browser code.
             </p>
 
             <div className="mb-5">
               <h4 className="text-sm font-medium text-[#202124] mb-3">Sending the key</h4>
-              <p className="text-sm text-[#5f6368] mb-3">Use either format — both are accepted:</p>
+              <p className="text-sm text-[#5f6368] mb-3">Send the key with either supported header:</p>
               <CodeBlock language="http" filename="Option A — X-API-Key header (recommended)" code={`POST /api/v1/nearby
 Content-Type: application/json
 X-API-Key: your-secret-key`} />
@@ -90,11 +90,12 @@ Authorization: Bearer your-secret-key`} />
 const API_KEY = process.env.LOCATION_SERVICE_API_KEY; // store in your app's env
 
 async function callLocationService(path: string, body: object) {
+  if (!API_KEY) throw new Error("LOCATION_SERVICE_API_KEY is not configured");
   const res = await fetch(\`\${BASE_URL}\${path}\`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-API-Key": API_KEY ?? "",
+      "X-API-Key": API_KEY,
     },
     body: JSON.stringify(body),
   });
@@ -113,11 +114,15 @@ async function callLocationService(path: string, body: object) {
                 <tbody className="divide-y divide-gray-100">
                   <tr>
                     <td className="px-4 py-2.5 font-mono text-xs text-green-700">200 OK</td>
-                    <td className="px-4 py-2.5 text-xs text-[#5f6368]">Valid key, or no key required (open mode)</td>
+                    <td className="px-4 py-2.5 text-xs text-[#5f6368]">Valid active API key</td>
                   </tr>
                   <tr>
                     <td className="px-4 py-2.5 font-mono text-xs text-red-600">401 Unauthorized</td>
-                    <td className="px-4 py-2.5 text-xs text-[#5f6368]">Key required but missing or wrong</td>
+                    <td className="px-4 py-2.5 text-xs text-[#5f6368]">Missing, invalid, or revoked API key</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-2.5 font-mono text-xs text-amber-700">503 Unavailable</td>
+                    <td className="px-4 py-2.5 text-xs text-[#5f6368]">API-key database could not be reached</td>
                   </tr>
                 </tbody>
               </table>
@@ -151,7 +156,7 @@ async function callLocationService(path: string, body: object) {
           {/* ─── Endpoints heading ─── */}
           <section id="endpoints" className="mb-6">
             <h2 className="text-xl text-[#202124] mb-1">Endpoints</h2>
-            <p className="text-sm text-[#5f6368]">Three public endpoints cover all integration needs.</p>
+            <p className="text-sm text-[#5f6368]">Four API endpoints cover all integration needs.</p>
           </section>
 
           {/* ─── 1. POST /nearby ─── */}
