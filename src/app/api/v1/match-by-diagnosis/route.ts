@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     const body: MatchRequestBody = await req.json();
     const { latitude, longitude, diagnosis, urgency = "routine", limit = 10 } = body;
 
-    if (!latitude || !longitude) {
+    if (latitude == null || longitude == null) {
       return NextResponse.json(
         { status: "error", message: "latitude and longitude are required." },
         { status: 400 }

@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     } = body;
 
     // Geocode place name if coordinates not provided
-    if ((!latitude || !longitude) && place) {
+    if ((latitude == null || longitude == null) && place) {
       const geo = await geocode(place);
       if (!geo) {
         return NextResponse.json(
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
       longitude = geo.lng;
     }
 
-    if (!latitude || !longitude) {
+    if (latitude == null || longitude == null) {
       return NextResponse.json(
         {
           status: "error",
