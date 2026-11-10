@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { haversineDistance } from "@/lib/haversine";
-import { geocode } from "@/lib/geocoding";
-import { reverseGeocode } from "@/lib/geocoding";
+import { geocode, reverseGeocode } from "@/lib/geocoding";
 import { getTravelTimes } from "@/lib/routing";
+import {
+  ExternalFacility,
+  searchExternalFacilities,
+} from "@/lib/external-facilities";
 
 interface NearbyRequestBody {
   latitude?: number;
@@ -195,6 +198,9 @@ export async function POST(req: NextRequest) {
           email: f.email,
           website: f.website,
           accredited: f.accredited,
+          accreditationStatus: f.accredited ? "accredited" as const : "not_accredited" as const,
+          source: "internal_registry" as const,
+          verificationStatus: "registry_record" as const,
           accreditationDate: f.accreditationDate,
           specialties: f.specialties.map((s) => s.specialty.name),
           services: f.services
@@ -206,22 +212,82 @@ export async function POST(req: NextRequest) {
       })
     );
 
+    let externalFacilities: ExternalFacility[] = [];
+    let externalSearchStatus:
+      | "available"
+      | "unavailable"
+      | "excluded_by_filters" = "available";
+
+    if (onlyAccredited || specialty || body.services?.length) {
+      externalSearchStatus = "excluded_by_filters";
+    } else {
+      try {
+        externalFacilities = await searchExternalFacilities(
+          latitude,
+          longitude,
+          [],
+          Math.min(radiusKm, 50)
+        );
+      } catch (error) {
+        externalSearchStatus = "unavailable";
+        console.error("[OpenStreetMap] nearby facility search failed:", error);
+      }
+    }
+
+    const nonDuplicateExternalFacilities = externalFacilities.filter((external) =>
+      !withTravel.some((internal) => {
+        const sameName =
+          internal.name.trim().toLowerCase() === external.name.trim().toLowerCase();
+        return (
+          sameName &&
+          haversineDistance(
+            internal.latitude,
+            internal.longitude,
+            external.latitude,
+            external.longitude
+          ) <= 0.5
+        );
+      })
+    );
+    const externalNearbyFacilities = nonDuplicateExternalFacilities.map(
+      ({ travelEstimate, ...facility }) => ({
+        ...facility,
+        travelTimes: travelEstimate,
+      })
+    );
+
+    const combinedFacilities = [
+      ...withTravel,
+      ...externalNearbyFacilities,
+    ]
+      .sort((a, b) => a.distanceKm - b.distanceKm)
+      .slice(0, limit);
+
     return NextResponse.json({
       status: "success",
       data: {
         userLocation: {
           latitude,
           longitude,
-          ...(userLocationDetails
+          addressStatus: userLocationDetails ? "resolved" : "unavailable",
+          address: userLocationDetails
             ? {
-                displayName: userLocationDetails.displayName,
+                formatted: userLocationDetails.displayName,
                 ...userLocationDetails.address,
               }
-            : { address: null }),
+            : null,
         },
         radiusKm,
-        total: withTravel.length,
-        facilities: withTravel,
+        externalSearch: {
+          source: "OpenStreetMap Nominatim",
+          attribution: "© OpenStreetMap contributors",
+          geographicScope: "Nigeria",
+          radiusKm: Math.min(radiusKm, 50),
+          status: externalSearchStatus,
+          facilitiesFound: externalFacilities.length,
+        },
+        total: combinedFacilities.length,
+        facilities: combinedFacilities,
       },
     });
   } catch (err) {

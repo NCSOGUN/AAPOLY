@@ -27,7 +27,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             return { id: user.id, email: user.email, name: user.name ?? "" };
           }
         } catch {
-          // DB may not be available during build — fall through to env check
+          // DB may not be available during build - fall through to env check
         }
 
         // Env-based fallback (for initial setup / build time)

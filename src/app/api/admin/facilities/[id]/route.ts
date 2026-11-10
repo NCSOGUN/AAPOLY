@@ -84,6 +84,7 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
         website,
         accredited,
         accreditationDate: accreditationDate ? new Date(accreditationDate) : null,
+        operatingHours: body.operatingHours ?? null,
         notes,
         specialties: {
           deleteMany: {},

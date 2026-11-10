@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Building2, Stethoscope, LogOut, BookOpen, Map } from "lucide-react";
+import { LayoutDashboard, Building2, Stethoscope, LogOut, BookOpen } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 
@@ -28,7 +28,7 @@ export function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex h-screen w-56 flex-col border-r border-gray-200 bg-white">
+    <aside className="sticky top-0 flex h-screen w-56 flex-shrink-0 flex-col border-r border-gray-200 bg-white overflow-y-auto">
       {/* Logo / Brand */}
       <div className="flex h-14 items-center border-b border-gray-200 px-5">
         <span className="text-sm font-medium text-[#202124]">

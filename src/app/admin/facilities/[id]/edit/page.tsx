@@ -60,7 +60,8 @@ export default async function EditFacilityPage({
       : "",
     notes: facility.notes ?? "",
     specialtyIds: facility.specialties.map((s) => s.specialtyId),
-    services: facility.services.map((s) => s.name),
+    services: facility.services.map((s) => ({ id: s.id, name: s.name, available: s.available })),
+    operatingHours: facility.operatingHours as import("@/components/admin/facility-form").OperatingHours | null,
   };
 
   return (

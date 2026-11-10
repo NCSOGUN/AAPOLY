@@ -79,6 +79,7 @@ export async function POST(req: NextRequest) {
       website,
       accredited,
       accreditationDate,
+      operatingHours,
       notes,
       specialtyIds,
       services,
@@ -106,6 +107,7 @@ export async function POST(req: NextRequest) {
         website,
         accredited: accredited ?? false,
         accreditationDate: accreditationDate ? new Date(accreditationDate) : null,
+        operatingHours: operatingHours ?? null,
         notes,
         specialties: specialtyIds?.length
           ? {

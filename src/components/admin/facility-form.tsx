@@ -1,13 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import dynamic from "next/dynamic";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
+import {
+  LoaderCircle,
+  MapPin,
+  Plus,
+  Search,
+  Trash2,
+  ToggleLeft,
+  ToggleRight,
+} from "lucide-react";
+
+const MapPicker = dynamic(
+  () => import("./map-picker").then((module) => module.MapPicker),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full items-center justify-center bg-gray-100 text-sm text-[#5f6368]">
+        Loading map…
+      </div>
+    ),
+  }
+);
 
 type Specialty = {
   id: string;
@@ -21,7 +42,7 @@ type ServiceEntry = {
   available: boolean;
 };
 
-type OperatingHours = {
+export type OperatingHours = {
   monday: string;
   tuesday: string;
   wednesday: string;
@@ -81,6 +102,14 @@ function slugify(text: string): string {
     .replace(/-+/g, "-");
 }
 
+function parseCoordinate(value: string, min: number, max: number): number | null {
+  if (!value.trim()) return null;
+  const coordinate = Number(value);
+  return Number.isFinite(coordinate) && coordinate >= min && coordinate <= max
+    ? coordinate
+    : null;
+}
+
 export function FacilityForm({ initialData, specialties, mode }: Props) {
   const router = useRouter();
 
@@ -108,6 +137,107 @@ export function FacilityForm({ initialData, specialties, mode }: Props) {
   const [showHours, setShowHours] = useState(!!initialData?.operatingHours);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [mapQuery, setMapQuery] = useState("");
+  const [locationLookupLoading, setLocationLookupLoading] = useState(false);
+  const [locationLookupError, setLocationLookupError] = useState("");
+  const [locationFeedback, setLocationFeedback] = useState("");
+  const locationLookupId = useRef(0);
+
+  const selectedLatitude = parseCoordinate(form.latitude, -90, 90);
+  const selectedLongitude = parseCoordinate(form.longitude, -180, 180);
+  const hasMapPin = selectedLatitude !== null && selectedLongitude !== null;
+  const mapLatitude = selectedLatitude ?? 6.9123;
+  const mapLongitude = selectedLongitude ?? 3.6481;
+
+  async function selectMapLocation(latitude: number, longitude: number) {
+    const lookupId = ++locationLookupId.current;
+    setLocationLookupLoading(true);
+    setLocationLookupError("");
+    setLocationFeedback("");
+    setForm((prev) => ({
+      ...prev,
+      latitude: latitude.toFixed(6),
+      longitude: longitude.toFixed(6),
+    }));
+
+    try {
+      const params = new URLSearchParams({
+        latitude: latitude.toString(),
+        longitude: longitude.toString(),
+      });
+      const response = await fetch(`/api/admin/location?${params}`);
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message ?? "Could not resolve this map location.");
+      }
+      if (lookupId !== locationLookupId.current) return;
+
+      const { address } = result.data;
+      const streetAddress = [
+        address.houseNumber,
+        address.road,
+        address.neighbourhood,
+      ]
+        .filter(Boolean)
+        .join(", ");
+
+      setForm((prev) => ({
+        ...prev,
+        latitude: latitude.toFixed(6),
+        longitude: longitude.toFixed(6),
+        address: streetAddress || result.data.displayName,
+        city: address.town || address.lga || prev.city,
+        state: address.state || prev.state,
+        country: address.country || prev.country,
+      }));
+      setLocationFeedback("Map point selected and address details filled in.");
+    } catch (lookupError) {
+      if (lookupId === locationLookupId.current) {
+        setLocationLookupError(
+          lookupError instanceof Error
+            ? lookupError.message
+            : "Could not resolve this map location."
+        );
+      }
+    } finally {
+      if (lookupId === locationLookupId.current) {
+        setLocationLookupLoading(false);
+      }
+    }
+  }
+
+  async function searchMapLocation() {
+    const query = mapQuery.trim();
+    if (!query) return;
+
+    const lookupId = ++locationLookupId.current;
+    setLocationLookupLoading(true);
+    setLocationLookupError("");
+    setLocationFeedback("");
+
+    try {
+      const response = await fetch(
+        `/api/admin/location?q=${encodeURIComponent(query)}`
+      );
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.message ?? "Could not find that place.");
+      }
+      if (lookupId !== locationLookupId.current) return;
+
+      await selectMapLocation(result.data.lat, result.data.lng);
+    } catch (lookupError) {
+      if (lookupId === locationLookupId.current) {
+        setLocationLookupError(
+          lookupError instanceof Error
+            ? lookupError.message
+            : "Could not find that place."
+        );
+        setLocationLookupLoading(false);
+      }
+    }
+  }
 
   function handleNameChange(value: string) {
     setForm((prev) => ({
@@ -281,88 +411,158 @@ export function FacilityForm({ initialData, specialties, mode }: Props) {
         <div className="border-b border-gray-200 px-6 py-4">
           <h2 className="text-base text-[#202124]">Location</h2>
           <p className="text-xs text-[#5f6368] mt-0.5">
-            Enter the address details and exact coordinates. Use{" "}
-            <a
-              href="https://maps.google.com"
-              target="_blank"
-              rel="noreferrer"
-              className="text-[#1a73e8] hover:underline"
-            >
-              Google Maps
-            </a>{" "}
-            or{" "}
-            <a
-              href="https://www.latlong.net"
-              target="_blank"
-              rel="noreferrer"
-              className="text-[#1a73e8] hover:underline"
-            >
-              latlong.net
-            </a>{" "}
-            to find coordinates.
+            Search for a place or click the map to pin the facility. Address
+            details and coordinates will be filled in automatically.
           </p>
         </div>
-        <div className="p-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="sm:col-span-2 space-y-1.5">
-            <Label htmlFor="address">Address</Label>
+        <div className="space-y-5 p-6">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <Input
-              id="address"
-              value={form.address}
-              onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))}
-              placeholder="12 Hospital Road, Abeokuta"
+              value={mapQuery}
+              onChange={(event) => setMapQuery(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  void searchMapLocation();
+                }
+              }}
+              placeholder="Search a hospital, street, town, or area"
+              aria-label="Search map location"
             />
+            <Button
+              type="button"
+              onClick={() => void searchMapLocation()}
+              disabled={locationLookupLoading || !mapQuery.trim()}
+              className="shrink-0"
+            >
+              {locationLookupLoading ? (
+                <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Search className="mr-2 h-4 w-4" />
+              )}
+              Find on map
+            </Button>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="city">City / LGA</Label>
-            <Input
-              id="city"
-              value={form.city}
-              onChange={(e) => setForm((p) => ({ ...p, city: e.target.value }))}
-              placeholder="Abeokuta"
+
+          <div className="relative h-[360px] overflow-hidden rounded-md border border-gray-200">
+            <MapPicker
+              latitude={mapLatitude}
+              longitude={mapLongitude}
+              hasPin={hasMapPin}
+              onSelect={selectMapLocation}
             />
+            {!hasMapPin && (
+              <div className="pointer-events-none absolute left-1/2 top-3 z-[1000] -translate-x-1/2 rounded bg-white/95 px-3 py-1.5 text-xs text-[#5f6368] shadow">
+                Click the map to place the facility pin
+              </div>
+            )}
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="state">State</Label>
-            <Input
-              id="state"
-              value={form.state}
-              onChange={(e) => setForm((p) => ({ ...p, state: e.target.value }))}
-              placeholder="Ogun"
-            />
+
+          <div aria-live="polite" className="min-h-5 text-sm">
+            {locationLookupLoading && (
+              <p className="flex items-center gap-2 text-[#5f6368]">
+                <LoaderCircle className="h-4 w-4 animate-spin" />
+                Finding address details…
+              </p>
+            )}
+            {!locationLookupLoading && locationFeedback && (
+              <p className="flex items-center gap-2 text-green-700">
+                <MapPin className="h-4 w-4" />
+                {locationFeedback}
+              </p>
+            )}
+            {locationLookupError && (
+              <p className="text-red-600">{locationLookupError}</p>
+            )}
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="country">Country</Label>
-            <Input
-              id="country"
-              value={form.country}
-              onChange={(e) => setForm((p) => ({ ...p, country: e.target.value }))}
-              placeholder="Nigeria"
-            />
-          </div>
-          <div className="space-y-1.5" />
-          <div className="space-y-1.5">
-            <Label htmlFor="latitude">Latitude *</Label>
-            <Input
-              id="latitude"
-              type="number"
-              step="any"
-              value={form.latitude}
-              onChange={(e) => setForm((p) => ({ ...p, latitude: e.target.value }))}
-              placeholder="6.9123"
-              required
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="longitude">Longitude *</Label>
-            <Input
-              id="longitude"
-              type="number"
-              step="any"
-              value={form.longitude}
-              onChange={(e) => setForm((p) => ({ ...p, longitude: e.target.value }))}
-              placeholder="3.6481"
-              required
-            />
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2 space-y-1.5">
+              <Label htmlFor="address">Address</Label>
+              <Input
+                id="address"
+                value={form.address}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, address: e.target.value }))
+                }
+                placeholder="12 Hospital Road, Abeokuta"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="city">City / LGA</Label>
+              <Input
+                id="city"
+                value={form.city}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, city: e.target.value }))
+                }
+                placeholder="Abeokuta"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="state">State</Label>
+              <Input
+                id="state"
+                value={form.state}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, state: e.target.value }))
+                }
+                placeholder="Ogun"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="country">Country</Label>
+              <Input
+                id="country"
+                value={form.country}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, country: e.target.value }))
+                }
+                placeholder="Nigeria"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="latitude">Latitude *</Label>
+              <Input
+                id="latitude"
+                type="number"
+                step="any"
+                min="-90"
+                max="90"
+                value={form.latitude}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, latitude: e.target.value }))
+                }
+                onBlur={() => {
+                  if (selectedLatitude !== null && selectedLongitude !== null) {
+                    void selectMapLocation(selectedLatitude, selectedLongitude);
+                  }
+                }}
+                placeholder="6.9123"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="longitude">Longitude *</Label>
+              <Input
+                id="longitude"
+                type="number"
+                step="any"
+                min="-180"
+                max="180"
+                value={form.longitude}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, longitude: e.target.value }))
+                }
+                onBlur={() => {
+                  if (selectedLatitude !== null && selectedLongitude !== null) {
+                    void selectMapLocation(selectedLatitude, selectedLongitude);
+                  }
+                }}
+                placeholder="3.6481"
+                required
+              />
+            </div>
           </div>
         </div>
       </div>

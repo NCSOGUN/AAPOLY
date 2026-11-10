@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-// PATCH /api/admin/facilities/:id/accreditation — toggle accreditation status
+// PATCH /api/admin/facilities/:id/accreditation - toggle accreditation status
 export async function PATCH(req: NextRequest, { params }: RouteContext) {
   const session = await auth();
   if (!session) {

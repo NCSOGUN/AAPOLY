@@ -1,4 +1,4 @@
-# Build Summary — Location Intelligence Service
+# Build Summary - Location Intelligence Service
 
 **Date:** 2025  
 **Build status:** ✅ Passing (`npm run build` exits 0, TypeScript clean, no lint errors)  
@@ -14,7 +14,7 @@
 |---|---|---|
 | `/api/v1/nearby` | POST | Find accredited hospitals near coordinates or a place name. Filters by specialty, radius, accreditation. Returns Haversine distances + OSRM real travel times (driving / walking / motorcycle). |
 | `/api/v1/match-by-diagnosis` | POST | AI-powered matching. Passes clinical text to Gemini 1.5 Flash, extracts specialties and required services, queries the DB, scores by clinical relevance + distance, honours urgency mode (routine / priority / emergency). |
-| `/api/v1/facilities/:id` | GET | Returns full facility record — specialties, services, coordinates, contact, accreditation date. |
+| `/api/v1/facilities/:id` | GET | Returns full facility record - specialties, services, coordinates, contact, accreditation date. |
 
 ### Admin GUI (`/admin/*`)
 
@@ -27,13 +27,13 @@
 | `/admin/facilities/:id/edit` | Same form in edit mode, pre-populated from the DB. Full PATCH support. |
 | `/admin/specialties` | Create, rename, and delete specialty definitions. Inline edit dialog. |
 
-### Admin API (`/api/admin/*`) — session-protected
+### Admin API (`/api/admin/*`) - session-protected
 
-- `GET/POST /api/admin/facilities` — paginated list + create
-- `GET/PUT/DELETE /api/admin/facilities/:id` — full CRUD
-- `GET/POST /api/admin/specialties` — list + create
-- `PUT/DELETE /api/admin/specialties/:id` — update + delete
-- `GET /api/admin/stats` — counts for the dashboard
+- `GET/POST /api/admin/facilities` - paginated list + create
+- `GET/PUT/DELETE /api/admin/facilities/:id` - full CRUD
+- `GET/POST /api/admin/specialties` - list + create
+- `PUT/DELETE /api/admin/specialties/:id` - update + delete
+- `GET /api/admin/stats` - counts for the dashboard
 
 ### Core Libraries (`src/lib/`)
 
@@ -49,11 +49,11 @@
 ### Database (Prisma Schema)
 
 Five models:
-- `Facility` — full hospital registry with geography, contact, accreditation
-- `Specialty` — ENT, Otology, Rhinology, Laryngology, Audiology, Head & Neck Surgery
-- `FacilitySpecialty` — many-to-many join with cascade deletes
-- `FacilityService` — per-facility services list (Audiometry, CT Scan, FESS, etc.)
-- `AdminUser` — bcrypt-hashed credentials for admin login
+- `Facility` - full hospital registry with geography, contact, accreditation
+- `Specialty` - ENT, Otology, Rhinology, Laryngology, Audiology, Head & Neck Surgery
+- `FacilitySpecialty` - many-to-many join with cascade deletes
+- `FacilityService` - per-facility services list (Audiometry, CT Scan, FESS, etc.)
+- `AdminUser` - bcrypt-hashed credentials for admin login
 
 ### Seed Data
 
@@ -77,12 +77,12 @@ Five models:
 |---|---|
 | Total project files (excluding node_modules, .next, .git) | 57 |
 | `src/` application files | 43 |
-| — API route handlers (`src/app/api/`) | 10 |
-| — Admin GUI pages (`src/app/admin/`) | 8 |
-| — Admin components (`src/components/admin/`) | 3 |
-| — shadcn/ui primitives (`src/components/ui/`) | 11 |
-| — Library modules (`src/lib/`) | 7 |
-| — App shell (`src/app/` root + globals) | 4 |
+| - API route handlers (`src/app/api/`) | 10 |
+| - Admin GUI pages (`src/app/admin/`) | 8 |
+| - Admin components (`src/components/admin/`) | 3 |
+| - shadcn/ui primitives (`src/components/ui/`) | 11 |
+| - Library modules (`src/lib/`) | 7 |
+| - App shell (`src/app/` root + globals) | 4 |
 | `prisma/` | 2 (`schema.prisma`, `seed.ts`) |
 | Config files (`package.json`, `tsconfig.json`, `tailwind.config.ts`, etc.) | 5 |
 | Documentation (`README.md`, `docx.md`, `.env.example`) | 3 |
@@ -143,19 +143,19 @@ src/
 
 ### Current limitations
 
-1. **`services` filter in `/api/v1/nearby`** — the request body accepts a `services` array but it is not applied as a database filter; it is silently ignored. No runtime error occurs, but the field has no effect. Filtering by required service is fully supported by `/api/v1/match-by-diagnosis` via the AI extraction path.
+1. **`services` filter in `/api/v1/nearby`** - the request body accepts a `services` array but it is not applied as a database filter; it is silently ignored. No runtime error occurs, but the field has no effect. Filtering by required service is fully supported by `/api/v1/match-by-diagnosis` via the AI extraction path.
 
-2. **Geocoding rate limit** — Nominatim enforces 1 request/second. Under concurrent load, geocoding calls are not rate-limited or cached at the application level. For production traffic above a few requests/minute, add Redis caching or switch to LocationIQ / Google Maps.
+2. **Geocoding rate limit** - Nominatim enforces 1 request/second. Under concurrent load, geocoding calls are not rate-limited or cached at the application level. For production traffic above a few requests/minute, add Redis caching or switch to LocationIQ / Google Maps.
 
-3. **OSRM public server** — The public demo OSRM server (`router.project-osrm.org`) has no SLA. Under heavy load or if the server is unavailable, the system gracefully falls back to Haversine estimates. For production, self-host OSRM or use OpenRouteService.
+3. **OSRM public server** - The public demo OSRM server (`router.project-osrm.org`) has no SLA. Under heavy load or if the server is unavailable, the system gracefully falls back to Haversine estimates. For production, self-host OSRM or use OpenRouteService.
 
-4. **No PostGIS** — Distance filtering loads all matching facilities from the database and filters in application memory using Haversine. Adequate for the current dataset size (dozens to low hundreds of facilities). For thousands of facilities, add a PostGIS `ST_DWithin` query to filter at the database level.
+4. **No PostGIS** - Distance filtering loads all matching facilities from the database and filters in application memory using Haversine. Adequate for the current dataset size (dozens to low hundreds of facilities). For thousands of facilities, add a PostGIS `ST_DWithin` query to filter at the database level.
 
-5. **Gemini fallback is ENT** — If the AI call fails or the response cannot be parsed, the system defaults to `["ENT"]` as the matched specialty. This keeps the endpoint useful but may not reflect the actual diagnosis.
+5. **Gemini fallback is ENT** - If the AI call fails or the response cannot be parsed, the system defaults to `["ENT"]` as the matched specialty. This keeps the endpoint useful but may not reflect the actual diagnosis.
 
-6. **No multi-state expansion yet** — Default state is Ogun. Seed data covers Ogun State only. The schema supports any state/country, but geocoding and facility data for other states needs to be added.
+6. **No multi-state expansion yet** - Default state is Ogun. Seed data covers Ogun State only. The schema supports any state/country, but geocoding and facility data for other states needs to be added.
 
-7. **No password reset or admin user management UI** — Admin accounts can only be created via the seed script or direct database manipulation.
+7. **No password reset or admin user management UI** - Admin accounts can only be created via the seed script or direct database manipulation.
 
 ### Recommended next steps
 
@@ -202,7 +202,7 @@ npm start       # Serve production build on port 3000
 ### Useful commands
 
 ```bash
-npm run db:studio   # Prisma Studio — visual database browser
+npm run db:studio   # Prisma Studio - visual database browser
 npm run lint        # ESLint check
 npx prisma generate # Regenerate Prisma client after schema changes
 npm run db:push     # Push schema changes to DB (dev/staging)

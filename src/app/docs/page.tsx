@@ -5,7 +5,7 @@ import { CodeBlock } from "@/components/docs/code-block";
 import { Badge } from "@/components/docs/badge";
 
 export const metadata: Metadata = {
-  title: "API Documentation — ENT-Care Location Intelligence Service",
+  title: "API Documentation - ENT-Care Location Intelligence Service",
   description:
     "Complete API reference for integrating with the ENT-Care Location Intelligence Service.",
 };
@@ -32,7 +32,7 @@ export default function DocsPage() {
             <p className="text-[#5f6368] leading-relaxed">
               A standalone service that owns all location logic, hospital data,
               specialties, and intelligent matching for the ENT-Care AI platform.
-              Other systems — Patient PWA, Hospital Desktop — call this API
+              Other systems - Patient PWA, Hospital Desktop - call this API
               instead of maintaining their own hospital lists or location code.
             </p>
 
@@ -49,7 +49,7 @@ export default function DocsPage() {
             <h2 className="text-xl text-[#202124] mb-3">Authentication</h2>
             <p className="text-sm text-[#5f6368] leading-relaxed mb-4">
               The public API endpoints (<code className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">/api/v1/*</code>) are
-              unauthenticated — any system can call them directly. The admin
+              unauthenticated - any system can call them directly. The admin
               interface (<code className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">/admin/*</code>) requires a session login.
             </p>
             <p className="text-sm text-[#5f6368] leading-relaxed">
@@ -91,7 +91,7 @@ export default function DocsPage() {
             method="POST"
             path="/api/v1/nearby"
             summary="Find nearby hospitals"
-            description="Given a user's coordinates (or a place name), returns accredited hospitals within the requested radius sorted by distance. This is the core endpoint — call it whenever you need to show a list of nearby facilities."
+            description="Given a user's coordinates (or a place name), returns nearest internal registry facilities plus available OpenStreetMap hospital listings. This coordinate-based search does not use AI."
           >
             {/* Request */}
             <div className="mb-6">
@@ -110,9 +110,10 @@ export default function DocsPage() {
                     {[
                       ["latitude", "float", "Yes*", "User's latitude. Required if place is not given."],
                       ["longitude", "float", "Yes*", "User's longitude. Required if place is not given."],
-                      ["place", "string", "Yes*", "Place name alternative — town, LGA, state. e.g. \"Abeokuta, Ogun State\". Geocoded via Nominatim."],
+                      ["place", "string", "Yes*", "Place name alternative - town, LGA, state. e.g. \"Abeokuta, Ogun State\". Geocoded via Nominatim."],
                       ["radiusKm", "number", "No", "Search radius in kilometres. Default: 50."],
                       ["specialty", "string", "No", "Filter by specialty name. e.g. \"ENT\", \"Rhinology\"."],
+                      ["services", "string[]", "No", "Require all listed services to be available at a facility."],
                       ["onlyAccredited", "boolean", "No", "If true, only return accredited facilities. Default: false."],
                       ["limit", "number", "No", "Maximum results to return. Default: 10."],
                     ].map(([field, type, req, desc]) => (
@@ -127,6 +128,7 @@ export default function DocsPage() {
                 </table>
               </div>
               <p className="text-xs text-[#5f6368] mt-2">* Provide either <code className="font-mono bg-gray-100 px-1 rounded">latitude + longitude</code> or <code className="font-mono bg-gray-100 px-1 rounded">place</code>. Not both required.</p>
+              <p className="text-xs text-[#5f6368] mt-2">Coordinates are used directly for distance. Reverse geocoding uses map data (not AI) to find the best available address and may resolve only to a road, neighbourhood, or town. Unfiltered nearby searches may include external OpenStreetMap hospitals, always marked unverified; external results are excluded for accreditation, specialty, or service-filtered searches. External search is capped at 50 km.</p>
             </div>
 
             {/* Example request */}
@@ -136,8 +138,6 @@ export default function DocsPage() {
   "latitude": 6.9123,
   "longitude": 3.6481,
   "radiusKm": 40,
-  "specialty": "ENT",
-  "onlyAccredited": true,
   "limit": 8
 }`} />
             </div>
@@ -160,10 +160,32 @@ export default function DocsPage() {
   "data": {
     "userLocation": {
       "latitude": 6.9123,
-      "longitude": 3.6481
+      "longitude": 3.6481,
+      "addressStatus": "resolved",
+      "address": {
+        "formatted": "Abeokuta, Ogun State, Nigeria",
+        "town": "Abeokuta",
+        "lga": "Abeokuta South",
+        "state": "Ogun",
+        "country": "Nigeria",
+        "countryCode": "ng",
+        "road": null,
+        "houseNumber": null,
+        "neighbourhood": null,
+        "postcode": null,
+        "components": {}
+      }
     },
     "radiusKm": 40,
-    "total": 2,
+    "externalSearch": {
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors",
+      "geographicScope": "Nigeria",
+      "radiusKm": 40,
+      "status": "available",
+      "facilitiesFound": 1
+    },
+    "total": 3,
     "facilities": [
       {
         "id": "cmxxx...",
@@ -173,6 +195,9 @@ export default function DocsPage() {
         "city": "Sagamu",
         "state": "Ogun",
         "country": "Nigeria",
+        "source": "internal_registry",
+        "verificationStatus": "registry_record",
+        "accreditationStatus": "accredited",
         "latitude": 6.849044,
         "longitude": 3.653023,
         "phone": null,
@@ -182,11 +207,24 @@ export default function DocsPage() {
         "specialties": ["ENT", "Otology", "Rhinology", "Laryngology"],
         "services": [],
         "distanceKm": 7.05,
+        "accredited": true,
+        "matchStatus": "not_assessed",
         "travelTimes": {
           "driving": "8 min",
           "walking": "1h 25m",
           "motorcycle": "6 min"
         }
+      },
+      {
+        "id": "osm:way:123",
+        "name": "Example Community Hospital",
+        "source": "openstreetmap",
+        "sourceUrl": "https://www.openstreetmap.org/way/123",
+        "verificationStatus": "unverified",
+        "accreditationStatus": "unverified",
+        "accredited": null,
+        "matchStatus": "specialty_unverified",
+        "distanceKm": 8.4
       }
     ]
   }
@@ -199,12 +237,12 @@ export default function DocsPage() {
             id="match-by-diagnosis"
             method="POST"
             path="/api/v1/match-by-diagnosis"
-            summary="AI-powered diagnosis matching"
-            description="Send a free-text clinical diagnosis or symptom description. The AI layer (Gemini) extracts relevant medical specialties and required services from the text, then queries the hospital registry for the best matching accredited facilities near the user's location."
+            summary="AI-assisted diagnosis matching with nearby fallback"
+            description="Send a free-text clinical diagnosis or symptom description. Groq (openai/gpt-oss-120b) extracts relevant specialties and services, then the API searches both the internal registry and OpenStreetMap Nominatim for nearby hospitals in Nigeria."
           >
             <div className="mb-5 rounded-md border border-blue-100 bg-blue-50 px-4 py-3">
               <p className="text-xs text-[#1a73e8] leading-relaxed">
-                <strong>How it works:</strong> The diagnosis text is sent to Gemini, which identifies relevant specialties (e.g. &quot;Rhinology&quot;, &quot;ENT&quot;) and procedures (e.g. &quot;Nasal Endoscopy&quot;) from the clinical description. The service then matches these against the facility registry and ranks by relevance + distance.
+                <strong>How it works:</strong> Groq is only used to interpret the diagnosis. When available, the endpoint uses the extracted specialties/services to match internal registry records and nearby OpenStreetMap hospitals. If Groq is unavailable or cannot identify a relevant specialty, it falls back to ordinary nearest-facility search and marks the results as not clinically assessed. Normal coordinate-to-address and nearest-hospital requests use no AI. External records are unverified, and OpenStreetMap does not confirm accreditation or current service availability.
               </p>
             </div>
 
@@ -226,7 +264,7 @@ export default function DocsPage() {
                       ["latitude", "float", "Yes", "User's latitude."],
                       ["longitude", "float", "Yes", "User's longitude."],
                       ["diagnosis", "string", "Yes", "Free-text clinical description, symptoms, or diagnosis summary. Can be in plain language."],
-                      ["urgency", "string", "No", "\"routine\" | \"priority\" | \"emergency\". Affects ranking — emergency sorts purely by distance. Default: \"routine\"."],
+                      ["urgency", "string", "No", "\"routine\" | \"priority\" | \"emergency\". Affects ranking - emergency sorts purely by distance. Default: \"routine\"."],
                       ["limit", "number", "No", "Maximum results to return. Default: 10."],
                     ].map(([field, type, req, desc]) => (
                       <tr key={field} className="hover:bg-gray-50">
@@ -263,7 +301,7 @@ export default function DocsPage() {
                     </tr>
                     <tr className="hover:bg-gray-50">
                       <td className="px-4 py-2.5 font-mono text-xs text-[#5f6368]">emergency</td>
-                      <td className="px-4 py-2.5 text-xs text-[#5f6368]">Ranked by distance only — closest hospital first regardless of specialty match score</td>
+                      <td className="px-4 py-2.5 text-xs text-[#5f6368]">Ranked by distance only - closest hospital first regardless of specialty match score</td>
                     </tr>
                   </tbody>
                 </table>
@@ -292,10 +330,20 @@ export default function DocsPage() {
     },
     "diagnosis": "Persistent nasal obstruction...",
     "urgency": "priority",
+    "matchingMode": "diagnosis_matched",
+    "diagnosisMatching": { "status": "completed" },
     "aiExtraction": {
       "specialties": ["Rhinology", "ENT"],
       "services": ["Nasal Endoscopy"],
       "reasoning": "The description indicates nasal obstruction and suspected polyps, pointing to Rhinology. ENT is the parent specialty. Nasal Endoscopy is the relevant procedure."
+    },
+    "externalSearch": {
+      "source": "OpenStreetMap Nominatim",
+      "attribution": "© OpenStreetMap contributors",
+      "geographicScope": "Nigeria",
+      "radiusKm": 25,
+      "status": "available",
+      "facilitiesFound": 12
     },
     "total": 2,
     "facilities": [
@@ -307,18 +355,32 @@ export default function DocsPage() {
         "city": "Abeokuta",
         "state": "Ogun",
         "country": "Nigeria",
+        "source": "internal_registry",
+        "verificationStatus": "registry_record",
+        "accreditationStatus": "accredited",
         "latitude": 7.144071,
         "longitude": 3.38045,
         "accredited": true,
         "specialties": ["ENT", "Otology", "Rhinology", "Laryngology"],
         "services": [],
         "matchedSpecialties": ["Rhinology", "ENT"],
+        "matchedServices": ["Nasal Endoscopy"],
         "distanceKm": 39.2,
         "travelEstimate": {
           "driving": "47 min",
           "walking": "7h 50m",
           "motorcycle": "31 min"
         }
+      },
+      {
+        "id": "osm:way:123456",
+        "name": "Example Community Hospital",
+        "source": "openstreetmap",
+        "sourceUrl": "https://www.openstreetmap.org/way/123456",
+        "verificationStatus": "unverified",
+        "accredited": null,
+        "matchStatus": "specialty_unverified",
+        "distanceKm": 8.4
       }
     ]
   }
@@ -399,6 +461,9 @@ export default function DocsPage() {
     "services": []
   }
 }`} />
+              <p className="mt-3 text-xs text-[#5f6368]">
+                Check <code>matchingMode</code> and <code>diagnosisMatching.status</code>: <code>diagnosis_matched</code> means AI matching ran; <code>nearby_fallback</code> means these are general nearest facilities within 50 km, not diagnosis-based recommendations. AI unavailability does not block the ordinary nearby search.
+              </p>
             </div>
           </EndpointSection>
 
@@ -410,7 +475,7 @@ export default function DocsPage() {
             </p>
 
             <div className="mb-8">
-              <h3 className="text-base text-[#202124] mb-3">Patient PWA — show nearby hospitals</h3>
+              <h3 className="text-base text-[#202124] mb-3">Patient PWA - show nearby hospitals</h3>
               <p className="text-sm text-[#5f6368] mb-4 leading-relaxed">
                 When a patient opens the app, get their browser location and call <code className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">/api/v1/nearby</code>.
               </p>
@@ -439,7 +504,7 @@ export default function DocsPage() {
             </div>
 
             <div className="mb-8">
-              <h3 className="text-base text-[#202124] mb-3">Patient PWA — match by diagnosis</h3>
+              <h3 className="text-base text-[#202124] mb-3">Patient PWA - match by diagnosis</h3>
               <p className="text-sm text-[#5f6368] mb-4 leading-relaxed">
                 After the AI symptom analysis produces a diagnosis summary, pass it here to get recommended hospitals.
               </p>
@@ -477,7 +542,7 @@ export default function DocsPage() {
             </div>
 
             <div className="mb-8">
-              <h3 className="text-base text-[#202124] mb-3">Hospital Desktop — look up a facility</h3>
+              <h3 className="text-base text-[#202124] mb-3">Hospital Desktop - look up a facility</h3>
               <CodeBlock language="typescript" filename="hospitalApp/api/getFacility.ts" code={`async function getFacilityById(id: string) {
   const res = await fetch(
     \`https://your-service.vercel.app/api/v1/facilities/\${id}\`
@@ -566,16 +631,16 @@ export default function DocsPage() {
             <h2 className="text-xl text-[#202124] mb-3">Rate Limits & Notes</h2>
             <div className="space-y-3 text-sm text-[#5f6368] leading-relaxed">
               <p>
-                <strong className="text-[#202124]">Nominatim geocoding</strong> — place name geocoding is rate-limited to 1 request/second by Nominatim&apos;s usage policy. For high-traffic usage, coordinates are preferred over place names.
+                <strong className="text-[#202124]">Nominatim geocoding</strong> - place name geocoding is rate-limited to 1 request/second by Nominatim&apos;s usage policy. For high-traffic usage, coordinates are preferred over place names.
               </p>
               <p>
-                <strong className="text-[#202124]">OSRM travel times</strong> — the public OSRM server is used for travel time estimates on the top 5 results. The remaining results use Haversine-based estimates. For production traffic, consider self-hosting OSRM.
+                <strong className="text-[#202124]">OSRM travel times</strong> - the public OSRM server is used for travel time estimates on the top 5 results. The remaining results use Haversine-based estimates. For production traffic, consider self-hosting OSRM.
               </p>
               <p>
-                <strong className="text-[#202124]">AI endpoint</strong> — the <code className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">/match-by-diagnosis</code> endpoint calls Gemini. If the AI call fails or times out, it falls back to ENT as the default specialty and still returns distance-ranked results.
+                <strong className="text-[#202124]">AI endpoint</strong> - the <code className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">/match-by-diagnosis</code> endpoint uses Groq for clinical-text interpretation only. If AI fails, the response switches to a clearly labeled nearby-facilities fallback; use <code>matchingMode</code> to distinguish it from diagnosis-matched results.
               </p>
               <p>
-                <strong className="text-[#202124]">No duplicate logic</strong> — consuming apps must never maintain their own hospital lists. Always call this service. It is the single source of truth.
+                <strong className="text-[#202124]">No duplicate logic</strong> - consuming apps must never maintain their own hospital lists. Always call this service. It is the single source of truth.
               </p>
             </div>
           </section>
