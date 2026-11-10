@@ -1,0 +1,73 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Facility {
+  id                String    @id @default(cuid())
+  name              String
+  slug              String    @unique
+  address           String?
+  city              String?
+  state             String    @default("Ogun")
+  country           String    @default("Nigeria")
+  latitude          Float
+  longitude         Float
+  phone             String?
+  email             String?
+  website           String?
+  accredited        Boolean   @default(false)
+  accreditationDate DateTime?
+  operatingHours    Json?
+  notes             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  specialties FacilitySpecialty[]
+  services    FacilityService[]
+}
+
+model Specialty {
+  id          String  @id @default(cuid())
+  name        String  @unique // e.g. "ENT", "Otology", "Rhinology"
+  code        String? @unique
+  description String?
+
+  facilities FacilitySpecialty[]
+}
+
+model FacilitySpecialty {
+  facilityId  String
+  specialtyId String
+  facility    Facility  @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  specialty   Specialty @relation(fields: [specialtyId], references: [id], onDelete: Cascade)
+
+  @@id([facilityId, specialtyId])
+}
+
+model FacilityService {
+  id         String   @id @default(cuid())
+  facilityId String
+  name       String // "Audiometry", "Nasal Endoscopy", "CT Scan"...
+  available  Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  facility Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+}
+
+model AdminUser {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String // bcrypt hashed
+  name      String?
+  role      String   @default("admin")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
