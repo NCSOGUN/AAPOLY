@@ -116,9 +116,9 @@ export async function POST(req: NextRequest) {
           : undefined,
         services: services?.length
           ? {
-              create: (services as string[]).map((name: string) => ({
-                name,
-                available: true,
+              create: (services as Array<{ name: string; available: boolean } | string>).map((svc) => ({
+                name: typeof svc === "string" ? svc : svc.name,
+                available: typeof svc === "string" ? true : (svc.available ?? true),
               })),
             }
           : undefined,

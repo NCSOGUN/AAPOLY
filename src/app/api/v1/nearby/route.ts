@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { haversineDistance } from "@/lib/haversine";
 import { geocode } from "@/lib/geocoding";
+import { reverseGeocode } from "@/lib/geocoding";
 import { getTravelTimes } from "@/lib/routing";
 
 interface NearbyRequestBody {
@@ -28,8 +29,65 @@ export async function POST(req: NextRequest) {
       limit = 10,
     } = body;
 
+    if (
+      (latitude !== undefined &&
+        (typeof latitude !== "number" ||
+          !Number.isFinite(latitude) ||
+          latitude < -90 ||
+          latitude > 90)) ||
+      (longitude !== undefined &&
+        (typeof longitude !== "number" ||
+          !Number.isFinite(longitude) ||
+          longitude < -180 ||
+          longitude > 180))
+    ) {
+      return NextResponse.json(
+        { status: "error", message: "Coordinates must be valid latitude and longitude numbers." },
+        { status: 400 }
+      );
+    }
+
+    if (
+      typeof radiusKm !== "number" ||
+      !Number.isFinite(radiusKm) ||
+      radiusKm <= 0 ||
+      radiusKm > 500
+    ) {
+      return NextResponse.json(
+        { status: "error", message: "radiusKm must be a number greater than 0 and no more than 500." },
+        { status: 400 }
+      );
+    }
+
+    if (!Number.isInteger(limit) || limit < 1 || limit > 50) {
+      return NextResponse.json(
+        { status: "error", message: "limit must be an integer between 1 and 50." },
+        { status: 400 }
+      );
+    }
+
+    if (
+      body.services !== undefined &&
+      (!Array.isArray(body.services) ||
+        body.services.some(
+          (service) => typeof service !== "string" || service.trim().length === 0
+        ))
+    ) {
+      return NextResponse.json(
+        { status: "error", message: "services must be an array of non-empty strings." },
+        { status: 400 }
+      );
+    }
+
     // Geocode place name if coordinates not provided
     if ((latitude == null || longitude == null) && place) {
+      if (typeof place !== "string" || place.trim().length === 0) {
+        return NextResponse.json(
+          { status: "error", message: "place must be a non-empty string." },
+          { status: 400 }
+        );
+      }
+
       const geo = await geocode(place);
       if (!geo) {
         return NextResponse.json(
@@ -51,6 +109,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const userLocationDetails = await reverseGeocode(latitude, longitude);
+
     // Fetch facilities with their specialties
     const facilities = await prisma.facility.findMany({
       where: onlyAccredited ? { accredited: true } : undefined,
@@ -67,6 +127,21 @@ export async function POST(req: NextRequest) {
         distanceKm: haversineDistance(latitude!, longitude!, f.latitude, f.longitude),
       }))
       .filter((f) => f.distanceKm <= radiusKm);
+
+    // Match every requested service, ignoring case and unavailable services.
+    if (body.services?.length) {
+      const requestedServices = body.services.map((service) =>
+        service.trim().toLowerCase()
+      );
+      nearby = nearby.filter((facility) => {
+        const availableServices = facility.services
+          .filter((service) => service.available)
+          .map((service) => service.name.toLowerCase());
+        return requestedServices.every((service) =>
+          availableServices.includes(service)
+        );
+      });
+    }
 
     // Filter by specialty
     if (specialty) {
@@ -134,7 +209,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       status: "success",
       data: {
-        userLocation: { latitude, longitude },
+        userLocation: {
+          latitude,
+          longitude,
+          ...(userLocationDetails
+            ? {
+                displayName: userLocationDetails.displayName,
+                ...userLocationDetails.address,
+              }
+            : { address: null }),
+        },
         radiusKm,
         total: withTravel.length,
         facilities: withTravel,

@@ -560,4 +560,3 @@ const route = await fetch(
 | Combined      | **GraphHopper**                  | Clean free tier           |
 
 ---
-

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Building2, Stethoscope, LogOut } from "lucide-react";
+import { LayoutDashboard, Building2, Stethoscope, LogOut, BookOpen, Map } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 
@@ -50,10 +50,10 @@ export function AdminSidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+                "flex items-center gap-3 px-3 py-2 text-sm transition-colors",
                 isActive
-                  ? "bg-blue-50 text-blue-700 border-l-2 border-blue-700 pl-[10px]"
-                  : "text-[#5f6368] hover:bg-gray-100 hover:text-[#202124]"
+                  ? "bg-blue-50 text-[#1a73e8]"
+                  : "text-[#5f6368] hover:bg-gray-50 hover:text-[#202124]"
               )}
             >
               <Icon className="h-4 w-4 flex-shrink-0" />
@@ -65,9 +65,16 @@ export function AdminSidebar() {
 
       {/* Sign out */}
       <div className="border-t border-gray-200 p-3">
+        <Link
+          href="/docs"
+          className="flex w-full items-center gap-3 px-3 py-2 text-sm text-[#5f6368] hover:bg-gray-50 hover:text-[#202124] transition-colors mb-1"
+        >
+          <BookOpen className="h-4 w-4 flex-shrink-0" />
+          API Docs
+        </Link>
         <button
           onClick={() => signOut({ callbackUrl: "/admin/login" })}
-          className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-[#5f6368] hover:bg-gray-100 hover:text-[#202124] transition-colors"
+          className="flex w-full items-center gap-3 px-3 py-2 text-sm text-[#5f6368] hover:bg-gray-50 hover:text-[#202124] transition-colors"
         >
           <LogOut className="h-4 w-4 flex-shrink-0" />
           Sign out

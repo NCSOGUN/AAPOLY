@@ -93,9 +93,9 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
         },
         services: {
           deleteMany: {},
-          create: (services ?? []).map((name: string) => ({
-            name,
-            available: true,
+          create: (services ?? []).map((svc: { name: string; available: boolean } | string) => ({
+            name: typeof svc === "string" ? svc : svc.name,
+            available: typeof svc === "string" ? true : (svc.available ?? true),
           })),
         },
       },

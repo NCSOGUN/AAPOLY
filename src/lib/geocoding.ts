@@ -7,6 +7,21 @@ export interface GeocodingResult {
   displayName?: string;
 }
 
+export interface ReverseGeocodingResult {
+  displayName: string;
+  address: {
+    houseNumber: string | null;
+    road: string | null;
+    neighbourhood: string | null;
+    town: string | null;
+    lga: string | null;
+    state: string | null;
+    postcode: string | null;
+    country: string | null;
+    countryCode: string | null;
+  };
+}
+
 /**
  * Geocode a place name to lat/lng using Nominatim (OpenStreetMap).
  * Returns null if the place cannot be found.
@@ -49,12 +64,13 @@ export async function geocode(place: string): Promise<GeocodingResult | null> {
 export async function reverseGeocode(
   lat: number,
   lng: number
-): Promise<string | null> {
+): Promise<ReverseGeocodingResult | null> {
   try {
     const params = new URLSearchParams({
       lat: lat.toString(),
       lon: lng.toString(),
       format: "json",
+      addressdetails: "1",
     });
 
     const url = `${NOMINATIM_BASE}/reverse?${params.toString()}`;
@@ -66,7 +82,31 @@ export async function reverseGeocode(
     if (!response.ok) return null;
 
     const data = await response.json();
-    return data?.display_name ?? null;
+    if (typeof data?.display_name !== "string" || !data.address) return null;
+
+    const address = data.address as Record<string, unknown>;
+    const getAddressPart = (...keys: string[]) => {
+      for (const key of keys) {
+        const value = address[key];
+        if (typeof value === "string" && value.length > 0) return value;
+      }
+      return null;
+    };
+
+    return {
+      displayName: data.display_name,
+      address: {
+        houseNumber: getAddressPart("house_number"),
+        road: getAddressPart("road", "pedestrian", "footway"),
+        neighbourhood: getAddressPart("neighbourhood", "suburb", "quarter"),
+        town: getAddressPart("city", "town", "village", "municipality", "hamlet"),
+        lga: getAddressPart("state_district", "county", "municipality"),
+        state: getAddressPart("state"),
+        postcode: getAddressPart("postcode"),
+        country: getAddressPart("country"),
+        countryCode: getAddressPart("country_code"),
+      },
+    };
   } catch {
     return null;
   }

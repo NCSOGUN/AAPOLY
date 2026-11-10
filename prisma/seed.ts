@@ -1,226 +1,288 @@
 import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("🌱 Seeding database...");
+  console.log("🌱 Starting seed...");
 
-  // ── Specialties ──────────────────────────────────────────────────────────
-  const specialtyData = [
-    {
-      name: "ENT",
-      code: "ENT-001",
-      description: "Ear, Nose and Throat — general otolaryngology",
-    },
-    {
-      name: "Otology",
-      code: "OTO-001",
-      description: "Diagnosis and treatment of ear disorders",
-    },
-    {
-      name: "Rhinology",
-      code: "RHI-001",
-      description: "Nasal cavity, sinuses and related structures",
-    },
-    {
-      name: "Laryngology",
-      code: "LAR-001",
-      description: "Larynx, voice box and throat disorders",
-    },
-    {
-      name: "Audiology",
-      code: "AUD-001",
-      description: "Hearing assessment, rehabilitation and hearing aids",
-    },
-    {
-      name: "Head & Neck Surgery",
-      code: "HNS-001",
-      description: "Surgical treatment of head and neck pathologies",
-    },
+  // ============================================
+  // 1. Create Specialties
+  // ============================================
+  const specialtiesData = [
+    { name: "ENT", code: "ENT", description: "Ear, Nose and Throat" },
+    { name: "Otology", code: "OTO", description: "Ear disorders and hearing" },
+    { name: "Rhinology", code: "RHI", description: "Nose and sinus disorders" },
+    { name: "Laryngology", code: "LAR", description: "Throat and voice disorders" },
+    { name: "Head and Neck Surgery", code: "HNS", description: "Head and neck surgical conditions" },
+    { name: "Audiology", code: "AUD", description: "Hearing assessment and management" },
+    { name: "Paediatric ENT", code: "PENT", description: "ENT conditions in children" },
+    { name: "General Surgery", code: "GS", description: "General surgical services" },
+    { name: "Paediatrics", code: "PAED", description: "Child health" },
+    { name: "Obstetrics & Gynaecology", code: "OBGYN", description: "Women's health and maternity" },
+    { name: "Internal Medicine", code: "IM", description: "Adult internal medicine" },
+    { name: "Orthopaedics", code: "ORTHO", description: "Bones, joints and trauma" },
+    { name: "Ophthalmology", code: "OPH", description: "Eye care" },
+    { name: "Radiology", code: "RAD", description: "Medical imaging" },
+    { name: "Psychiatry", code: "PSY", description: "Mental health" },
+    { name: "Cardiology", code: "CARD", description: "Heart conditions" },
+    { name: "Nephrology", code: "NEPH", description: "Kidney conditions" },
   ];
 
-  const specialties: Record<string, { id: string; name: string }> = {};
+  const specialties: Record<string, string> = {};
 
-  for (const sp of specialtyData) {
+  for (const item of specialtiesData) {
     const specialty = await prisma.specialty.upsert({
-      where: { name: sp.name },
+      where: { name: item.name },
       update: {},
-      create: sp,
+      create: item,
     });
-    specialties[sp.name] = specialty;
-    console.log(`  ✔ Specialty: ${specialty.name}`);
+    specialties[item.name] = specialty.id;
   }
 
-  // ── Facilities ───────────────────────────────────────────────────────────
-  const facilitiesData = [
+  console.log("✅ Specialties created");
+
+  // ============================================
+  // 2. Create Facilities
+  // ============================================
+  const facilities = [
     {
-      name: "Ogun State University Teaching Hospital ENT Unit",
-      slug: "ogun-state-university-teaching-hospital-ent",
-      address: "OOUTH Campus, Sagamu Road",
+      name: "Federal Medical Centre (FMC) Abeokuta",
+      slug: "fmc-abeokuta",
+      address: "Olabisi Onabanjo Way, Idi-Aba, Abeokuta",
+      city: "Abeokuta",
+      latitude: 7.144071,
+      longitude: 3.38045,
+      accredited: true,
+      notes: "Major tertiary hospital with confirmed ENT department",
+      specialtyNames: ["ENT", "Otology", "Rhinology", "Laryngology", "General Surgery", "Paediatrics", "Obstetrics & Gynaecology", "Internal Medicine", "Orthopaedics", "Ophthalmology", "Radiology"],
+    },
+    {
+      name: "Olabisi Onabanjo University Teaching Hospital (OOUTH)",
+      slug: "oouth-sagamu",
+      address: "Hospital Road, Sagamu",
       city: "Sagamu",
-      state: "Ogun",
-      country: "Nigeria",
-      latitude: 6.8372,
-      longitude: 3.6469,
-      phone: "+234 803 300 1234",
-      email: "ent@oouth.gov.ng",
+      latitude: 6.849044,
+      longitude: 3.653023,
       accredited: true,
-      accreditationDate: new Date("2022-03-15"),
-      notes: "Main ENT referral centre for Ogun State",
-      specialties: ["ENT", "Otology", "Head & Neck Surgery", "Audiology"],
-      services: [
-        "Audiometry",
-        "Tympanometry",
-        "Nasal Endoscopy",
-        "Laryngoscopy",
-        "CT Scan",
-        "Tonsillectomy",
-        "Septoplasty",
-        "Cochlear Implant Assessment",
-      ],
+      notes: "Teaching hospital with confirmed ENT / Otorhinolaryngology department",
+      specialtyNames: ["ENT", "Otology", "Rhinology", "Laryngology", "General Surgery", "Paediatrics", "Obstetrics & Gynaecology", "Ophthalmology", "Cardiology", "Nephrology"],
     },
     {
-      name: "Abeokuta ENT & Audiology Centre",
-      slug: "abeokuta-ent-audiology-centre",
-      address: "15 Ibara Road",
+      name: "Babcock University Teaching Hospital (BUTH)",
+      slug: "buth-ilishan",
+      address: "Babcock Road, Ilishan-Remo",
+      city: "Ilishan-Remo",
+      latitude: 6.891086,
+      longitude: 3.717291,
+      accredited: true,
+      notes: "Private teaching hospital",
+      specialtyNames: ["ENT", "General Surgery", "Paediatrics", "Obstetrics & Gynaecology", "Internal Medicine", "Ophthalmology", "Radiology"],
+    },
+    {
+      name: "Sacred Heart Hospital",
+      slug: "sacred-heart-lantoro",
+      address: "Lantoro Road, Lantoro, Abeokuta South",
       city: "Abeokuta",
-      state: "Ogun",
-      country: "Nigeria",
-      latitude: 7.1475,
-      longitude: 3.3619,
-      phone: "+234 807 455 6789",
-      email: "info@abeokutaentcentre.ng",
+      latitude: 7.16324,
+      longitude: 3.36283,
       accredited: true,
-      accreditationDate: new Date("2021-09-01"),
-      notes: "Specialises in paediatric and adult hearing rehabilitation",
-      specialties: ["ENT", "Audiology", "Rhinology"],
-      services: [
-        "Audiometry",
-        "Hearing Aid Fitting",
-        "Nasal Endoscopy",
-        "FESS",
-        "Speech Therapy Referral",
-      ],
+      notes: "Catholic missionary hospital (est. 1895), ~300 beds. Has ENT services",
+      specialtyNames: ["ENT", "General Surgery", "Paediatrics", "Obstetrics & Gynaecology", "Ophthalmology"],
     },
     {
-      name: "Ijebu-Ode Specialist Hospital ENT Department",
-      slug: "ijebu-ode-specialist-hospital-ent",
-      address: "Oba Sijuade Way",
+      name: "Federal Neuro-Psychiatric Hospital Aro",
+      slug: "neuro-psychiatric-aro",
+      address: "Aro, Abeokuta",
+      city: "Abeokuta",
+      latitude: 7.15,
+      longitude: 3.35,
+      accredited: true,
+      notes: "Specialist psychiatric hospital with Lantoro annex",
+      specialtyNames: ["Psychiatry"],
+    },
+    {
+      name: "Abeokuta State Hospital",
+      slug: "abeokuta-state-hospital",
+      address: "Abeokuta",
+      city: "Abeokuta",
+      latitude: 7.155,
+      longitude: 3.345,
+      accredited: true,
+      notes: "Premier state hospital",
+      specialtyNames: ["General Surgery", "Paediatrics", "Obstetrics & Gynaecology", "Internal Medicine"],
+    },
+    {
+      name: "Ijebu Ode State Hospital",
+      slug: "ijebu-ode-state-hospital",
+      address: "Olisa Street, Odo Esa, Ijebu-Ode",
       city: "Ijebu-Ode",
-      state: "Ogun",
-      country: "Nigeria",
-      latitude: 6.8167,
-      longitude: 3.9167,
-      phone: "+234 805 211 2233",
-      email: "ent@ijebuhospital.gov.ng",
-      accredited: false,
-      notes: "Government specialist hospital with ENT outpatient clinic",
-      specialties: ["ENT", "Laryngology"],
-      services: [
-        "Laryngoscopy",
-        "Microlaryngoscopy",
-        "Tracheostomy",
-        "Tonsillectomy",
-        "Adenoidectomy",
-      ],
-    },
-    {
-      name: "Remo ENT & Head-Neck Surgery Clinic",
-      slug: "remo-ent-head-neck-surgery-clinic",
-      address: "22 Station Road",
-      city: "Shagamu",
-      state: "Ogun",
-      country: "Nigeria",
-      latitude: 6.8512,
-      longitude: 3.6512,
-      phone: "+234 816 777 8900",
-      email: "clinic@remoent.ng",
+      latitude: 6.81314,
+      longitude: 3.92486,
       accredited: true,
-      accreditationDate: new Date("2023-01-20"),
-      notes: "Private specialist practice with day surgery facilities",
-      specialties: ["ENT", "Head & Neck Surgery", "Rhinology"],
-      services: [
-        "Parotidectomy",
-        "Thyroidectomy",
-        "Neck Dissection",
-        "Nasal Endoscopy",
-        "FESS",
-        "CT-guided Biopsy",
-      ],
+      notes: "Full-service state hospital",
+      specialtyNames: ["General Surgery", "Paediatrics", "Obstetrics & Gynaecology", "Internal Medicine"],
     },
     {
-      name: "Gateway ENT & Facial Plastics Centre",
-      slug: "gateway-ent-facial-plastics-centre",
-      address: "Plot 4 Obantoko Estate",
+      name: "Ota State Hospital",
+      slug: "ota-state-hospital",
+      address: "Sango Idiroko Road, Onipanu, Ota",
+      city: "Ota",
+      latitude: 6.682626,
+      longitude: 3.209063,
+      accredited: true,
+      notes: "Modern state hospital",
+      specialtyNames: ["General Surgery", "Paediatrics", "Obstetrics & Gynaecology", "Internal Medicine"],
+    },
+    {
+      name: "Ilaro State Hospital",
+      slug: "ilaro-state-hospital",
+      address: "Ilaro",
+      city: "Ilaro",
+      latitude: 6.89,
+      longitude: 3.02,
+      accredited: true,
+      notes: "Serves Yewa communities",
+      specialtyNames: ["General Surgery", "Paediatrics", "Obstetrics & Gynaecology", "Internal Medicine"],
+    },
+    {
+      name: "Isara State Hospital",
+      slug: "isara-state-hospital",
+      address: "Isara",
+      city: "Isara",
+      latitude: 6.99,
+      longitude: 3.68,
+      accredited: true,
+      notes: "Serves Remo North area",
+      specialtyNames: ["General Surgery", "Paediatrics", "Obstetrics & Gynaecology", "Internal Medicine"],
+    },
+    {
+      name: "General Hospital Iperu",
+      slug: "general-hospital-iperu",
+      address: "Iperu",
+      city: "Iperu",
+      latitude: 6.91,
+      longitude: 3.67,
+      accredited: true,
+      notes: "Community general hospital",
+      specialtyNames: ["General Surgery", "Paediatrics", "Obstetrics & Gynaecology", "Internal Medicine"],
+    },
+    {
+      name: "Olikoye Ransome-Kuti Memorial Hospital",
+      slug: "olikoye-ransome-kuti",
+      address: "Asero, Abeokuta",
       city: "Abeokuta",
-      state: "Ogun",
-      country: "Nigeria",
-      latitude: 7.1356,
-      longitude: 3.3734,
-      phone: "+234 909 123 4567",
-      email: "admin@gatewayent.ng",
+      latitude: 7.16,
+      longitude: 3.36,
       accredited: true,
-      accreditationDate: new Date("2020-07-11"),
-      notes: "Comprehensive ENT and facial reconstruction services",
-      specialties: ["ENT", "Otology", "Rhinology", "Laryngology", "Audiology"],
-      services: [
-        "Audiometry",
-        "Tympanometry",
-        "Mastoidectomy",
-        "Cochlear Implant Surgery",
-        "Rhinoplasty",
-        "Septoplasty",
-        "FESS",
-        "Voice Therapy",
-        "Laryngoscopy",
-      ],
+      notes: "Memorial hospital in Asero",
+      specialtyNames: ["General Surgery", "Paediatrics", "Obstetrics & Gynaecology", "Internal Medicine"],
+    },
+    {
+      name: "Oba Ademola Maternity Hospital",
+      slug: "oba-ademola-maternity",
+      address: "Ijemo, Abeokuta",
+      city: "Abeokuta",
+      latitude: 7.15,
+      longitude: 3.34,
+      accredited: true,
+      notes: "Specialized maternity hospital",
+      specialtyNames: ["Obstetrics & Gynaecology", "Paediatrics"],
+    },
+    {
+      name: "Angel & Eagle Specialist Hospital",
+      slug: "angel-eagle-abeokuta",
+      address: "9B Sikiru Jimoh Road, GRA Ibara, Abeokuta",
+      city: "Abeokuta",
+      latitude: 7.145,
+      longitude: 3.35,
+      accredited: false,
+      notes: "Private multi-specialty hospital",
+      specialtyNames: ["General Surgery", "Internal Medicine", "Paediatrics"],
+    },
+    {
+      name: "Beachland Specialist Hospital",
+      slug: "beachland-arepo",
+      address: "16 Al-Firdaus Estate, Arepo, Off Lagos-Ibadan Expressway",
+      city: "Arepo",
+      latitude: 6.75,
+      longitude: 3.45,
+      accredited: false,
+      notes: "Private specialist hospital",
+      specialtyNames: ["General Surgery", "Internal Medicine", "Paediatrics"],
+    },
+    {
+      name: "St. Luke Specialist Hospital",
+      slug: "st-luke-ijebu-ode",
+      address: "13 Prince Ademola Dada Drive, Off Molipa Express, Ijebu-Ode",
+      city: "Ijebu-Ode",
+      latitude: 6.82,
+      longitude: 3.92,
+      accredited: false,
+      notes: "Private specialist hospital",
+      specialtyNames: ["General Surgery", "Internal Medicine"],
+    },
+    {
+      name: "Faith Specialist Hospital",
+      slug: "faith-specialist-ota",
+      address: "Idiroko Road, Ota Ogun State Housing Estate",
+      city: "Ota",
+      latitude: 6.69,
+      longitude: 3.23,
+      accredited: false,
+      notes: "Strong in orthopaedic care",
+      specialtyNames: ["Orthopaedics", "General Surgery", "Internal Medicine"],
     },
   ];
 
-  for (const fd of facilitiesData) {
-    const { specialties: specialtyNames, services, ...facilityData } = fd;
+  for (const facility of facilities) {
+    const { specialtyNames, ...facilityData } = facility;
 
-    const facility = await prisma.facility.upsert({
-      where: { slug: fd.slug },
-      update: {},
+    const created = await prisma.facility.upsert({
+      where: { slug: facility.slug },
+      update: {
+        name: facilityData.name,
+        address: facilityData.address,
+        city: facilityData.city,
+        latitude: facilityData.latitude,
+        longitude: facilityData.longitude,
+        accredited: facilityData.accredited,
+        notes: facilityData.notes,
+      },
       create: {
         ...facilityData,
-        specialties: {
-          create: specialtyNames.map((name) => ({
-            specialtyId: specialties[name].id,
-          })),
-        },
-        services: {
-          create: services.map((name) => ({ name, available: true })),
-        },
+        state: "Ogun",
+        country: "Nigeria",
       },
     });
-    console.log(`  ✔ Facility: ${facility.name}`);
+
+    // Link specialties
+    for (const specialtyName of specialtyNames) {
+      const specialtyId = specialties[specialtyName];
+      if (!specialtyId) continue;
+
+      await prisma.facilitySpecialty.upsert({
+        where: {
+          facilityId_specialtyId: {
+            facilityId: created.id,
+            specialtyId,
+          },
+        },
+        update: {},
+        create: {
+          facilityId: created.id,
+          specialtyId,
+        },
+      });
+    }
   }
 
-  // ── Admin user ────────────────────────────────────────────────────────────
-  const adminEmail = process.env.ADMIN_EMAIL ?? "admin@entcare.ai";
-  const adminPassword = process.env.ADMIN_PASSWORD ?? "admin123";
-  const hashed = await bcrypt.hash(adminPassword, 12);
-
-  await prisma.adminUser.upsert({
-    where: { email: adminEmail },
-    update: {},
-    create: {
-      email: adminEmail,
-      password: hashed,
-      name: "Admin",
-    },
-  });
-  console.log(`  ✔ Admin user: ${adminEmail}`);
-
-  console.log("✅ Seed complete.");
+  console.log("✅ Facilities created and linked to specialties");
+  console.log("🎉 Seed completed successfully!");
 }
 
 main()
   .catch((e) => {
-    console.error("Seed failed:", e);
+    console.error(e);
     process.exit(1);
   })
   .finally(async () => {

@@ -1,20 +1,25 @@
-import { auth } from "@/lib/auth";
+import { NextRequest, NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
 
-export default auth((req) => {
-  const { pathname } = req.nextUrl;
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
 
-  // Allow /admin/login through without session check
   if (pathname === "/admin/login") {
-    return;
+    return NextResponse.next();
   }
 
-  // Protect all other /admin routes
-  if (pathname.startsWith("/admin") && !req.auth) {
-    const loginUrl = new URL("/admin/login", req.url);
-    loginUrl.searchParams.set("callbackUrl", pathname);
-    return Response.redirect(loginUrl);
+  if (pathname.startsWith("/admin")) {
+    const token = await getToken({ req: request });
+
+    if (!token) {
+      const loginUrl = new URL("/admin/login", request.url);
+      loginUrl.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
   }
-});
+
+  return NextResponse.next();
+}
 
 export const config = {
   matcher: ["/admin/:path*"],

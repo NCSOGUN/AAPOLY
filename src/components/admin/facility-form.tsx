@@ -7,12 +7,43 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
 
 type Specialty = {
   id: string;
   name: string;
   code: string | null;
 };
+
+type ServiceEntry = {
+  id?: string;        // existing service id (edit mode)
+  name: string;
+  available: boolean;
+};
+
+type OperatingHours = {
+  monday: string;
+  tuesday: string;
+  wednesday: string;
+  thursday: string;
+  friday: string;
+  saturday: string;
+  sunday: string;
+};
+
+const DEFAULT_HOURS: OperatingHours = {
+  monday: "8:00 AM – 5:00 PM",
+  tuesday: "8:00 AM – 5:00 PM",
+  wednesday: "8:00 AM – 5:00 PM",
+  thursday: "8:00 AM – 5:00 PM",
+  friday: "8:00 AM – 5:00 PM",
+  saturday: "Closed",
+  sunday: "Closed",
+};
+
+const DAYS: (keyof OperatingHours)[] = [
+  "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
+];
 
 type FacilityData = {
   id?: string;
@@ -29,13 +60,14 @@ type FacilityData = {
   website: string;
   accredited: boolean;
   accreditationDate: string;
+  operatingHours: OperatingHours | null;
   notes: string;
   specialtyIds: string[];
-  services: string[];
+  services: ServiceEntry[];
 };
 
 interface Props {
-  initialData?: Partial<FacilityData>;
+  initialData?: Partial<Omit<FacilityData, "services"> & { services: ServiceEntry[] }>;
   specialties: Specialty[];
   mode: "create" | "edit";
 }
@@ -66,14 +98,14 @@ export function FacilityForm({ initialData, specialties, mode }: Props) {
     website: initialData?.website ?? "",
     accredited: initialData?.accredited ?? false,
     accreditationDate: initialData?.accreditationDate ?? "",
+    operatingHours: (initialData?.operatingHours as OperatingHours | null) ?? null,
     notes: initialData?.notes ?? "",
     specialtyIds: initialData?.specialtyIds ?? [],
     services: initialData?.services ?? [],
   });
 
-  const [servicesText, setServicesText] = useState(
-    (initialData?.services ?? []).join("\n")
-  );
+  const [newServiceName, setNewServiceName] = useState("");
+  const [showHours, setShowHours] = useState(!!initialData?.operatingHours);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -94,17 +126,60 @@ export function FacilityForm({ initialData, specialties, mode }: Props) {
     }));
   }
 
+  function addService() {
+    const name = newServiceName.trim();
+    if (!name) return;
+    if (form.services.some((s) => s.name.toLowerCase() === name.toLowerCase())) return;
+    setForm((prev) => ({
+      ...prev,
+      services: [...prev.services, { name, available: true }],
+    }));
+    setNewServiceName("");
+  }
+
+  function removeService(index: number) {
+    setForm((prev) => ({
+      ...prev,
+      services: prev.services.filter((_, i) => i !== index),
+    }));
+  }
+
+  function toggleServiceAvailable(index: number) {
+    setForm((prev) => ({
+      ...prev,
+      services: prev.services.map((s, i) =>
+        i === index ? { ...s, available: !s.available } : s
+      ),
+    }));
+  }
+
+  function toggleHours(enabled: boolean) {
+    setShowHours(enabled);
+    setForm((prev) => ({
+      ...prev,
+      operatingHours: enabled ? DEFAULT_HOURS : null,
+    }));
+  }
+
+  function updateHours(day: keyof OperatingHours, value: string) {
+    setForm((prev) => ({
+      ...prev,
+      operatingHours: prev.operatingHours
+        ? { ...prev.operatingHours, [day]: value }
+        : { ...DEFAULT_HOURS, [day]: value },
+    }));
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    const services = servicesText
-      .split("\n")
-      .map((s) => s.trim())
-      .filter(Boolean);
-
-    const payload = { ...form, services };
+    const payload = {
+      ...form,
+      latitude: form.latitude,
+      longitude: form.longitude,
+    };
 
     try {
       const url =
@@ -136,17 +211,19 @@ export function FacilityForm({ initialData, specialties, mode }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-5">
       {error && (
-        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
       )}
 
-      {/* Basic info */}
-      <div className="rounded-md border border-gray-200 bg-white p-6">
-        <h2 className="text-lg text-[#202124] mb-5">Basic Information</h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {/* ── Basic Information ── */}
+      <div className="border border-gray-200 bg-white">
+        <div className="border-b border-gray-200 px-6 py-4">
+          <h2 className="text-base text-[#202124]">Basic Information</h2>
+        </div>
+        <div className="p-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="name">Facility Name *</Label>
             <Input
@@ -199,10 +276,33 @@ export function FacilityForm({ initialData, specialties, mode }: Props) {
         </div>
       </div>
 
-      {/* Location */}
-      <div className="rounded-md border border-gray-200 bg-white p-6">
-        <h2 className="text-lg text-[#202124] mb-5">Location</h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {/* ── Location ── */}
+      <div className="border border-gray-200 bg-white">
+        <div className="border-b border-gray-200 px-6 py-4">
+          <h2 className="text-base text-[#202124]">Location</h2>
+          <p className="text-xs text-[#5f6368] mt-0.5">
+            Enter the address details and exact coordinates. Use{" "}
+            <a
+              href="https://maps.google.com"
+              target="_blank"
+              rel="noreferrer"
+              className="text-[#1a73e8] hover:underline"
+            >
+              Google Maps
+            </a>{" "}
+            or{" "}
+            <a
+              href="https://www.latlong.net"
+              target="_blank"
+              rel="noreferrer"
+              className="text-[#1a73e8] hover:underline"
+            >
+              latlong.net
+            </a>{" "}
+            to find coordinates.
+          </p>
+        </div>
+        <div className="p-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2 space-y-1.5">
             <Label htmlFor="address">Address</Label>
             <Input
@@ -239,6 +339,7 @@ export function FacilityForm({ initialData, specialties, mode }: Props) {
               placeholder="Nigeria"
             />
           </div>
+          <div className="space-y-1.5" />
           <div className="space-y-1.5">
             <Label htmlFor="latitude">Latitude *</Label>
             <Input
@@ -266,92 +367,206 @@ export function FacilityForm({ initialData, specialties, mode }: Props) {
         </div>
       </div>
 
-      {/* Accreditation */}
-      <div className="rounded-md border border-gray-200 bg-white p-6">
-        <h2 className="text-lg text-[#202124] mb-5">Accreditation</h2>
-        <div className="flex items-center gap-3 mb-4">
-          <Checkbox
-            id="accredited"
-            checked={form.accredited}
-            onCheckedChange={(checked) =>
-              setForm((p) => ({ ...p, accredited: !!checked }))
-            }
-          />
-          <Label htmlFor="accredited" className="cursor-pointer">
-            This facility is accredited
-          </Label>
+      {/* ── Accreditation ── */}
+      <div className="border border-gray-200 bg-white">
+        <div className="border-b border-gray-200 px-6 py-4">
+          <h2 className="text-base text-[#202124]">Accreditation</h2>
         </div>
-        {form.accredited && (
-          <div className="space-y-1.5 max-w-xs">
-            <Label htmlFor="accreditationDate">Accreditation Date</Label>
-            <Input
-              id="accreditationDate"
-              type="date"
-              value={form.accreditationDate}
-              onChange={(e) =>
-                setForm((p) => ({ ...p, accreditationDate: e.target.value }))
+        <div className="p-6">
+          <label className="flex items-center gap-3 cursor-pointer mb-4">
+            <Checkbox
+              id="accredited"
+              checked={form.accredited}
+              onCheckedChange={(checked) =>
+                setForm((p) => ({ ...p, accredited: !!checked }))
               }
             />
-          </div>
-        )}
+            <span className="text-sm text-[#202124]">This facility is accredited</span>
+          </label>
+          {form.accredited && (
+            <div className="space-y-1.5 max-w-xs">
+              <Label htmlFor="accreditationDate">Accreditation Date</Label>
+              <Input
+                id="accreditationDate"
+                type="date"
+                value={form.accreditationDate}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, accreditationDate: e.target.value }))
+                }
+              />
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Specialties */}
-      <div className="rounded-md border border-gray-200 bg-white p-6">
-        <h2 className="text-lg text-[#202124] mb-5">Specialties</h2>
-        {specialties.length === 0 ? (
-          <p className="text-sm text-[#5f6368]">
-            No specialties defined yet. Add some in the Specialties section.
+      {/* ── Specialties ── */}
+      <div className="border border-gray-200 bg-white">
+        <div className="border-b border-gray-200 px-6 py-4">
+          <h2 className="text-base text-[#202124]">Specialties</h2>
+          <p className="text-xs text-[#5f6368] mt-0.5">
+            Select all medical specialties this facility offers.
           </p>
-        ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {specialties.map((s) => (
-              <label
-                key={s.id}
-                className="flex items-center gap-2.5 cursor-pointer"
-              >
-                <Checkbox
-                  checked={form.specialtyIds.includes(s.id)}
-                  onCheckedChange={() => toggleSpecialty(s.id)}
-                />
-                <span className="text-sm text-[#202124]">{s.name}</span>
-              </label>
-            ))}
+        </div>
+        <div className="p-6">
+          {specialties.length === 0 ? (
+            <p className="text-sm text-[#5f6368]">
+              No specialties defined yet. Add some in the Specialties section.
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 gap-y-3 gap-x-4 sm:grid-cols-3">
+              {specialties.map((s) => (
+                <label
+                  key={s.id}
+                  className="flex items-center gap-2.5 cursor-pointer"
+                >
+                  <Checkbox
+                    checked={form.specialtyIds.includes(s.id)}
+                    onCheckedChange={() => toggleSpecialty(s.id)}
+                  />
+                  <span className="text-sm text-[#202124]">{s.name}</span>
+                  {s.code && (
+                    <span className="text-xs text-[#5f6368]">({s.code})</span>
+                  )}
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Services ── */}
+      <div className="border border-gray-200 bg-white">
+        <div className="border-b border-gray-200 px-6 py-4">
+          <h2 className="text-base text-[#202124]">Services & Equipment</h2>
+          <p className="text-xs text-[#5f6368] mt-0.5">
+            Specific procedures, tests, or equipment available. Toggle to mark a service as temporarily unavailable.
+          </p>
+        </div>
+        <div className="p-6 space-y-4">
+          {/* Add new service */}
+          <div className="flex gap-2">
+            <Input
+              value={newServiceName}
+              onChange={(e) => setNewServiceName(e.target.value)}
+              placeholder="e.g. Audiometry, Nasal Endoscopy, CT Scan"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addService();
+                }
+              }}
+              className="flex-1"
+            />
+            <button
+              type="button"
+              onClick={addService}
+              className="inline-flex items-center gap-1.5 border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              <Plus className="h-4 w-4" />
+              Add
+            </button>
+          </div>
+
+          {/* Service list */}
+          {form.services.length === 0 ? (
+            <p className="text-sm text-[#5f6368]">No services added yet.</p>
+          ) : (
+            <div className="border border-gray-200 divide-y divide-gray-100">
+              {form.services.map((service, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between px-4 py-2.5 bg-white hover:bg-gray-50"
+                >
+                  <span className={`text-sm ${service.available ? "text-[#202124]" : "text-[#5f6368] line-through"}`}>
+                    {service.name}
+                  </span>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => toggleServiceAvailable(index)}
+                      className="flex items-center gap-1.5 text-xs text-[#5f6368] hover:text-[#202124] transition-colors"
+                      title={service.available ? "Mark unavailable" : "Mark available"}
+                    >
+                      {service.available ? (
+                        <><ToggleRight className="h-4 w-4 text-green-600" /><span className="text-green-700">Available</span></>
+                      ) : (
+                        <><ToggleLeft className="h-4 w-4 text-gray-400" /><span>Unavailable</span></>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeService(index)}
+                      className="text-[#5f6368] hover:text-red-600 transition-colors"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Operating Hours ── */}
+      <div className="border border-gray-200 bg-white">
+        <div className="border-b border-gray-200 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base text-[#202124]">Operating Hours</h2>
+              <p className="text-xs text-[#5f6368] mt-0.5">
+                Optional. Set the facility's opening hours for each day.
+              </p>
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Checkbox
+                checked={showHours}
+                onCheckedChange={(c) => toggleHours(!!c)}
+              />
+              <span className="text-sm text-[#5f6368]">Set hours</span>
+            </label>
+          </div>
+        </div>
+        {showHours && form.operatingHours && (
+          <div className="p-6">
+            <div className="border border-gray-200 divide-y divide-gray-100">
+              {DAYS.map((day) => (
+                <div key={day} className="flex items-center gap-4 px-4 py-2.5 bg-white">
+                  <span className="w-28 text-sm text-[#5f6368] capitalize">{day}</span>
+                  <Input
+                    value={(form.operatingHours as OperatingHours)[day]}
+                    onChange={(e) => updateHours(day, e.target.value)}
+                    placeholder="e.g. 8:00 AM – 5:00 PM or Closed"
+                    className="flex-1 text-sm"
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
 
-      {/* Services */}
-      <div className="rounded-md border border-gray-200 bg-white p-6">
-        <h2 className="text-lg text-[#202124] mb-2">Services</h2>
-        <p className="text-sm text-[#5f6368] mb-4">
-          One service per line (e.g. Audiometry, Nasal Endoscopy, CT Scan)
-        </p>
-        <Textarea
-          value={servicesText}
-          onChange={(e) => setServicesText(e.target.value)}
-          placeholder={"Audiometry\nNasal Endoscopy\nCT Scan\nTonsillectomy"}
-          rows={6}
-        />
+      {/* ── Notes ── */}
+      <div className="border border-gray-200 bg-white">
+        <div className="border-b border-gray-200 px-6 py-4">
+          <h2 className="text-base text-[#202124]">Notes</h2>
+        </div>
+        <div className="p-6">
+          <Textarea
+            value={form.notes}
+            onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
+            placeholder="Any additional notes about this facility…"
+            rows={3}
+          />
+        </div>
       </div>
 
-      {/* Notes */}
-      <div className="rounded-md border border-gray-200 bg-white p-6">
-        <h2 className="text-lg text-[#202124] mb-5">Notes</h2>
-        <Textarea
-          value={form.notes}
-          onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
-          placeholder="Any additional notes about this facility…"
-          rows={3}
-        />
-      </div>
-
-      {/* Actions */}
-      <div className="flex items-center justify-between">
+      {/* ── Actions ── */}
+      <div className="flex items-center justify-between py-2">
         <button
           type="button"
           onClick={() => router.back()}
-          className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+          className="border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
         >
           Cancel
         </button>
