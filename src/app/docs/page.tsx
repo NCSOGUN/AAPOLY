@@ -39,24 +39,77 @@ export default function DocsPage() {
             <div className="mt-6 rounded-md border border-gray-200 bg-gray-50 px-5 py-4">
               <p className="text-xs text-[#5f6368] mb-2 font-medium uppercase tracking-wide">Base URL</p>
               <code className="text-sm text-[#202124] font-mono">
-                https://your-deployment.vercel.app/api/v1
+                https://ent-location-sys.vercel.app/api/v1
               </code>
             </div>
           </div>
 
           {/* ─── Authentication ─── */}
           <section id="authentication" className="mb-12 pb-8 border-b border-gray-200">
-            <h2 className="text-xl text-[#202124] mb-3">Authentication</h2>
-            <p className="text-sm text-[#5f6368] leading-relaxed mb-4">
-              The public API endpoints (<code className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">/api/v1/*</code>) are
-              unauthenticated - any system can call them directly. The admin
-              interface (<code className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">/admin/*</code>) requires a session login.
+            <h2 className="text-xl text-[#202124] mb-3">Authorization</h2>
+            <p className="text-sm text-[#5f6368] leading-relaxed mb-5">
+              The API uses an optional API key guard. Set the{" "}
+              <code className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">API_SECRET_KEY</code>{" "}
+              environment variable on the server to enable it. When set, every request to{" "}
+              <code className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">/api/v1/*</code>{" "}
+              must include the key. When not set, the API is open (useful for development).
             </p>
-            <p className="text-sm text-[#5f6368] leading-relaxed">
-              For production deployments it is recommended to add an{" "}
-              <code className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">X-API-Key</code>{" "}
-              header check at the middleware level to restrict access to known
-              internal systems only.
+
+            <div className="mb-5">
+              <h4 className="text-sm font-medium text-[#202124] mb-3">Sending the key</h4>
+              <p className="text-sm text-[#5f6368] mb-3">Use either format — both are accepted:</p>
+              <CodeBlock language="http" filename="Option A — X-API-Key header (recommended)" code={`POST /api/v1/nearby
+Content-Type: application/json
+X-API-Key: your-secret-key`} />
+              <div className="mt-3">
+                <CodeBlock language="http" filename="Option B — Bearer token" code={`POST /api/v1/nearby
+Content-Type: application/json
+Authorization: Bearer your-secret-key`} />
+              </div>
+            </div>
+
+            <div className="mb-5">
+              <h4 className="text-sm font-medium text-[#202124] mb-3">TypeScript example</h4>
+              <CodeBlock language="typescript" filename="api-client.ts" code={`const BASE_URL = "https://ent-location-sys.vercel.app/api/v1";
+const API_KEY = process.env.LOCATION_SERVICE_API_KEY; // store in your app's env
+
+async function callLocationService(path: string, body: object) {
+  const res = await fetch(\`\${BASE_URL}\${path}\`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-API-Key": API_KEY ?? "",
+    },
+    body: JSON.stringify(body),
+  });
+  return res.json();
+}`} />
+            </div>
+
+            <div className="rounded-md border border-gray-200 overflow-hidden text-sm">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-2.5 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Response</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">When</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  <tr>
+                    <td className="px-4 py-2.5 font-mono text-xs text-green-700">200 OK</td>
+                    <td className="px-4 py-2.5 text-xs text-[#5f6368]">Valid key, or no key required (open mode)</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-2.5 font-mono text-xs text-red-600">401 Unauthorized</td>
+                    <td className="px-4 py-2.5 text-xs text-[#5f6368]">Key required but missing or wrong</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p className="text-xs text-[#5f6368] mt-3">
+              The admin interface (<code className="font-mono bg-gray-100 px-1 rounded">/admin/*</code>) uses a separate session-based login — email and password set via{" "}
+              <code className="font-mono bg-gray-100 px-1 rounded">ADMIN_EMAIL</code> /{" "}
+              <code className="font-mono bg-gray-100 px-1 rounded">ADMIN_PASSWORD</code> env vars.
             </p>
           </section>
 
@@ -480,9 +533,12 @@ export default function DocsPage() {
                 When a patient opens the app, get their browser location and call <code className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">/api/v1/nearby</code>.
               </p>
               <CodeBlock language="typescript" filename="patientApp/api/findHospitals.ts" code={`async function findNearbyHospitals(lat: number, lng: number) {
-  const res = await fetch("https://your-service.vercel.app/api/v1/nearby", {
+  const res = await fetch("https://ent-location-sys.vercel.app/api/v1/nearby", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "X-API-Key": process.env.LOCATION_SERVICE_API_KEY ?? "",
+    },
     body: JSON.stringify({
       latitude: lat,
       longitude: lng,
@@ -515,10 +571,13 @@ export default function DocsPage() {
   urgency: "routine" | "priority" | "emergency" = "routine"
 ) {
   const res = await fetch(
-    "https://your-service.vercel.app/api/v1/match-by-diagnosis",
+    "https://ent-location-sys.vercel.app/api/v1/match-by-diagnosis",
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-API-Key": process.env.LOCATION_SERVICE_API_KEY ?? "",
+      },
       body: JSON.stringify({
         latitude: lat,
         longitude: lng,
@@ -545,7 +604,12 @@ export default function DocsPage() {
               <h3 className="text-base text-[#202124] mb-3">Hospital Desktop - look up a facility</h3>
               <CodeBlock language="typescript" filename="hospitalApp/api/getFacility.ts" code={`async function getFacilityById(id: string) {
   const res = await fetch(
-    \`https://your-service.vercel.app/api/v1/facilities/\${id}\`
+    \`https://ent-location-sys.vercel.app/api/v1/facilities/\${id}\`,
+    {
+      headers: {
+        "X-API-Key": process.env.LOCATION_SERVICE_API_KEY ?? "",
+      },
+    }
   );
 
   const data = await res.json();
@@ -564,9 +628,12 @@ export default function DocsPage() {
                 If the user types a location instead of sharing GPS, pass it as <code className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">place</code>.
                 The service geocodes it via Nominatim (OpenStreetMap) automatically.
               </p>
-              <CodeBlock language="typescript" filename="example" code={`fetch("/api/v1/nearby", {
+              <CodeBlock language="typescript" filename="example" code={`fetch("https://ent-location-sys.vercel.app/api/v1/nearby", {
   method: "POST",
-  headers: { "Content-Type": "application/json" },
+  headers: {
+    "Content-Type": "application/json",
+    "X-API-Key": process.env.LOCATION_SERVICE_API_KEY ?? "",
+  },
   body: JSON.stringify({
     place: "Sagamu, Ogun State, Nigeria",
     radiusKm: 20,

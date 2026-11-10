@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { haversineDistance } from "@/lib/haversine";
 import { geocode, reverseGeocode } from "@/lib/geocoding";
 import { getTravelTimes } from "@/lib/routing";
+import { checkApiKey } from "@/lib/api-auth";
 import {
   ExternalFacility,
   searchExternalFacilities,
@@ -20,6 +21,8 @@ interface NearbyRequestBody {
 }
 
 export async function POST(req: NextRequest) {
+  const authError = checkApiKey(req);
+  if (authError) return authError;
   try {
     const body: NearbyRequestBody = await req.json();
 
@@ -297,4 +300,16 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// Handle CORS preflight
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization, X-API-Key",
+    },
+  });
 }
