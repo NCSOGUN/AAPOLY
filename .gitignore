@@ -36,3 +36,9 @@ next-env.d.ts
 
 # prisma
 prisma/migrations/
+
+# Credentials and sensitive files
+*.txt
+!README*.txt
+*.docx
+e2-s3.*.txt
