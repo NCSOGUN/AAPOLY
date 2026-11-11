@@ -9,6 +9,7 @@ import {
   LogOut,
   BookOpen,
   KeyRound,
+  AlertCircle,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
@@ -18,6 +19,7 @@ const navItems = [
   { label: "Facilities",  href: "/admin/facilities",  icon: Building2 },
   { label: "Specialties", href: "/admin/specialties", icon: Stethoscope },
   { label: "API Keys",    href: "/admin/api-keys",    icon: KeyRound },
+  { label: "Escalated Cases", href: "/admin/escalated-cases", icon: AlertCircle },
 ];
 
 export function AdminSidebar() {

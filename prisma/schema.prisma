@@ -95,7 +95,10 @@ model EscalatedCase {
   additionalContext String?
   analysisResult    Json
   imageUrls         String[]
-  status            String   @default("pending") // pending | reviewed | resolved
+  status            String   @default("pending") // pending | under_review | responded | closed
+  consentGiven      Boolean  @default(false)
+  patientEmail      String?
+  specialistNotes   String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

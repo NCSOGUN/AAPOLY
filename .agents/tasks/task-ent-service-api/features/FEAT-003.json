@@ -1,0 +1,31 @@
+{
+  "id": "FEAT-003",
+  "type": "feat",
+  "description": "Complex case escalation infrastructure: consent endpoint, admin API routes, admin UI page, sidebar link, and admin CORS. Depends on FEAT-001 (EscalatedCase model must exist in Prisma schema and DB). Independent of FEAT-002.",
+  "status": "completed",
+  "steps": [
+    "1. Create src/app/api/v1/escalation/[id]/consent/route.ts. POST handler: (a) call checkApiKey(req); (b) parse body { consent: boolean, email?: string }; (c) validate consent is boolean; (d) look up prisma.escalatedCase.findUnique({ where: { id: params.id } }), return 404 if not found; (e) if consent === true: prisma.escalatedCase.update({ where: { id }, data: { consentGiven: true, patientEmail: email ?? null } }); (f) if consent === false: prisma.escalatedCase.update({ where: { id }, data: { status: 'closed' } }); (g) return { status: 'success', data: { id, consentGiven: updated.consentGiven, status: updated.status } }. Add OPTIONS handler with CORS headers.",
+    "2. Create src/app/api/admin/escalated-cases/route.ts. GET handler: (a) const session = await auth(); if (!session) return 401; (b) read optional ?status query param from req.nextUrl.searchParams.get('status'); (c) prisma.escalatedCase.findMany({ where: status ? { status } : undefined, orderBy: { createdAt: 'desc' } }); (d) return { status: 'success', data: cases }. Import auth from '@/lib/auth', prisma from '@/lib/prisma'.",
+    "3. Create src/app/api/admin/escalated-cases/[id]/route.ts. PATCH handler: (a) const session = await auth(); if (!session) return 401; (b) parse body { specialistNotes?: string, status?: string }; (c) try prisma.escalatedCase.update({ where: { id: params.id }, data: { ...(specialistNotes !== undefined && { specialistNotes }), ...(status !== undefined && { status }) } }); return { status: 'success', data: updated }. Return 404 if Prisma throws P2025 (record not found).",
+    "4. Create src/app/admin/escalated-cases/page.tsx as a server component following the pattern of src/app/admin/api-keys/page.tsx: export const dynamic = 'force-dynamic'; fetch all cases via prisma.escalatedCase.findMany({ orderBy: { createdAt: 'desc' } }); serialize dates (createdAt, updatedAt) to ISO strings; pass to <EscalatedCasesClient cases={serializedCases} />.",
+    "5. Create src/app/admin/escalated-cases/escalated-cases-client.tsx as a 'use client' component. State: cases list, activeFilter ('all'|'pending'|'under_review'|'responded'|'closed'), expandedId (string|null), editState (specialistNotes + status per case). Render: (a) filter buttons row; (b) table with columns: Symptoms (first 80 chars + '...' if longer), Status badge, Consent badge (Yes/No), Created date; (c) clicking a row toggles expansion — expanded row shows full analysisResult as <pre> JSON block, specialistNotes <textarea>, status <select> with all four values, and a Save button that calls PATCH /api/admin/escalated-cases/[id]; (d) status badges: pending → border-yellow-200 bg-yellow-50 text-yellow-700, under_review → border-blue-200 bg-blue-50 text-[#1a73e8], responded → border-green-200 bg-green-50 text-green-700, closed → border-gray-200 bg-gray-100 text-gray-500. All styling: border-gray-200, no shadow, no rounded-xl, primary #1a73e8.",
+    "6. In src/components/admin/sidebar.tsx: add AlertCircle to lucide-react import. Add { label: 'Escalated Cases', href: '/admin/escalated-cases', icon: AlertCircle } to navItems array after the API Keys entry.",
+    "7. In next.config.ts: in the headers() array, add a second entry for source: '/api/admin/:path*' with the same four CORS headers as the existing /api/v1/:path* entry (Access-Control-Allow-Origin: *, Access-Control-Allow-Methods: GET, POST, PATCH, OPTIONS, Access-Control-Allow-Headers: Content-Type, Authorization, X-API-Key, Access-Control-Max-Age: 86400)."
+  ],
+  "acceptance_criteria": [
+    "npm run build exits 0",
+    "POST /api/v1/escalation/:id/consent with consent=true updates consentGiven=true and saves email",
+    "POST /api/v1/escalation/:id/consent with consent=false sets status=closed",
+    "GET /api/admin/escalated-cases requires auth (returns 401 without session)",
+    "GET /api/admin/escalated-cases returns filtered list when ?status= param provided",
+    "PATCH /api/admin/escalated-cases/:id updates specialistNotes and status",
+    "/admin/escalated-cases page renders with case table, status filter buttons, and expandable rows",
+    "Admin sidebar shows 'Escalated Cases' link with AlertCircle icon",
+    "next.config.ts includes CORS headers for /api/admin/:path*"
+  ],
+  "verification": [
+    "cd /Users/apple/Documents/ent-location-sys && npm run build"
+  ],
+  "blocked_reason": null,
+  "findings": "Schema migration required: added consentGiven (Boolean @default(false)), patientEmail (String?), and specialistNotes (String?) to EscalatedCase model. Ran db:push before build. All 7 steps implemented and build exits 0. The existing status comment in schema (pending|reviewed|resolved) was updated to reflect the actual values used by the UI (pending|under_review|responded|closed) — this is a string field with no DB enum constraint, so old records with reviewed/resolved are unaffected."
+}
