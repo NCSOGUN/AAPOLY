@@ -1,53 +1,20 @@
 import type { NextConfig } from "next";
 
+const CORS_HEADERS = [
+  { key: "Access-Control-Allow-Origin", value: "*" },
+  { key: "Access-Control-Allow-Methods", value: "GET, POST, PATCH, DELETE, OPTIONS" },
+  {
+    key: "Access-Control-Allow-Headers",
+    value: "Content-Type, Authorization, X-API-Key, X-Hospital-Token",
+  },
+  { key: "Access-Control-Max-Age", value: "86400" },
+];
+
 const nextConfig: NextConfig = {
   async headers() {
     return [
-      {
-        // Apply CORS headers to all public API v1 routes
-        source: "/api/v1/:path*",
-        headers: [
-          { key: "Access-Control-Allow-Origin", value: "*" },
-          {
-            key: "Access-Control-Allow-Methods",
-            value: "GET, POST, OPTIONS",
-          },
-          {
-            key: "Access-Control-Allow-Headers",
-            value: "Content-Type, Authorization, X-API-Key",
-          },
-          { key: "Access-Control-Max-Age", value: "86400" },
-        ],
-      },
-      {
-        // CORS for the hospital desktop-app auth + verify endpoints
-        source: "/api/v1/hospital-auth/:path*",
-        headers: [
-          { key: "Access-Control-Allow-Origin", value: "*" },
-          { key: "Access-Control-Allow-Methods", value: "GET, POST, OPTIONS" },
-          {
-            key: "Access-Control-Allow-Headers",
-            value: "Content-Type, Authorization, X-Hospital-Token, X-API-Key",
-          },
-          { key: "Access-Control-Max-Age", value: "86400" },
-        ],
-      },
-      {
-        // Apply CORS headers to admin API routes
-        source: "/api/admin/:path*",
-        headers: [
-          { key: "Access-Control-Allow-Origin", value: "*" },
-          {
-            key: "Access-Control-Allow-Methods",
-            value: "GET, POST, PATCH, OPTIONS",
-          },
-          {
-            key: "Access-Control-Allow-Headers",
-            value: "Content-Type, Authorization, X-API-Key",
-          },
-          { key: "Access-Control-Max-Age", value: "86400" },
-        ],
-      },
+      { source: "/api/v1/:path*",    headers: CORS_HEADERS },
+      { source: "/api/admin/:path*", headers: CORS_HEADERS },
     ];
   },
 };

@@ -163,3 +163,102 @@ model HospitalUser {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 }
+
+// ─── Patient Profile (optional — created only if user chooses to save their info) ───
+
+model PatientProfile {
+  id              String    @id @default(cuid())
+
+  // Identity — all optional
+  firstName       String?
+  lastName        String?
+  email           String?               // for email-back of reports
+  phone           String?
+  dateOfBirth     DateTime?
+  gender          String?               // male | female | other | prefer_not_to_say
+  address         String?
+  city            String?
+  state           String?
+  country         String?   @default("Nigeria")
+
+  // Passport / profile photo — stored in iDrive E2
+  passportPhotoKey  String?             // storage key e.g. "profiles/2026/xx/img_xx.jpg"
+  passportPhotoUrl  String?             // signed URL (expires — refresh on demand)
+
+  // Medical context
+  bloodGroup        String?             // A+ | B+ | O+ etc.
+  knownAllergies    String[]
+  existingConditions String[]
+  currentMedications String[]
+  previousSurgeries  String[]
+  emergencyContact   String?
+  emergencyPhone     String?
+
+  // Consent & preferences
+  consentToDataRetention Boolean @default(false)   // agreed we can keep their data
+  consentToContactByEmail Boolean @default(false)  // we can email them
+  consentDate            DateTime?
+
+  // Tracking
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  reports       DiagnosisReport[]
+
+  @@index([email])
+  @@index([phone])
+}
+
+// ─── Diagnosis Report — always created, optionally linked to a patient ───────────
+
+model DiagnosisReport {
+  id              String    @id @default(cuid())
+  trackingId      String    @unique   // short human-readable: "ENT-2026-XXXXXX"
+
+  // Input (what the user sent)
+  symptoms        String
+  affectedArea    String?
+  duration        String?
+  age             Int?
+  additionalContext String?
+  inputImageKeys  String[]            // iDrive E2 keys for uploaded images
+
+  // Analysis result (full JSON from /api/v1/analyze response)
+  analysisResult  Json
+
+  // Clinical output (denormalised for quick access without parsing JSON)
+  primaryConditionId   String?       // condition slug
+  primaryConditionName String?
+  urgencyScore         Int?
+  urgencyLevel         String?       // Emergency | Urgent | Soon | Routine
+  referralThreshold    String?
+
+  // Location context
+  latitude        Float?
+  longitude       Float?
+  place           String?
+
+  // Nearby facilities snapshot (what was returned at time of report)
+  nearbyFacilities Json?
+
+  // PDF report
+  pdfKey          String?             // iDrive E2 storage key when PDF generated
+  pdfUrl          String?             // signed URL
+
+  // Patient link — optional
+  patientProfileId  String?
+  patientProfile    PatientProfile? @relation(fields: [patientProfileId], references: [id])
+
+  // Status
+  status          String    @default("generated")  // generated | viewed | shared | archived
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([trackingId])
+  @@index([patientProfileId])
+  @@index([urgencyScore])
+  @@index([createdAt])
+  @@index([primaryConditionId])
+}
