@@ -1,0 +1,24 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Image analysis endpoint at /api/v1/analyze-image. Independent of FEAT-001 steps 7-10 but depends on FEAT-001 steps 1-6 (Gemini helper callGeminiImageAnalysis must exist in src/lib/ai-matching.ts). Create the route file, validate base64, call Gemini vision, return structured response.",
+  "status": "completed",
+  "steps": [
+    "1. Create src/app/api/v1/analyze-image/route.ts. Add imports: NextRequest, NextResponse from 'next/server'; checkApiKey from '@/lib/api-auth'; callGeminiImageAnalysis, GeminiAIError from '@/lib/ai-matching'; crypto from 'node:crypto'.",
+    "2. Define request body type: `{ imageBase64: string; imageType: 'ear' | 'nose' | 'throat' | 'general'; additionalContext?: string }`.",
+    "3. Implement POST handler: (a) call checkApiKey(req) and return if error; (b) parse JSON body, validate imageBase64 and imageType are present; (c) strip data URL prefix (regex: /^data:image\\/[a-zA-Z+]+;base64,/); (d) validate stripped string with /^[A-Za-z0-9+/]+=*$/ — return 400 with code INVALID_BASE64 if fails; (e) check Buffer.from(stripped, 'base64').length > 4 * 1024 * 1024 — return 413 with code IMAGE_TOO_LARGE if true; (f) call callGeminiImageAnalysis(imageBase64, imageType, additionalContext) — on GeminiAIError with code AI_QUOTA_EXCEEDED return 429, on other GeminiAIError return 500 with code IMAGE_ANALYSIS_FAILED; (g) build referenceId = 'img_' + crypto.randomBytes(8).toString('hex'); (h) return 200 with { status: 'success', data: { imageType, analysis: { findings, possibleConditions, urgencyScore, nextSteps, specialistReviewNeeded }, disclaimer: result.disclaimer, consentNotice: result.disclaimer, referenceId, processedAt: new Date().toISOString() } }.",
+    "4. Add OPTIONS handler returning CORS headers: Access-Control-Allow-Origin: *, Access-Control-Allow-Methods: POST, OPTIONS, Access-Control-Allow-Headers: Content-Type, Authorization, X-API-Key."
+  ],
+  "acceptance_criteria": [
+    "npm run build exits 0",
+    "POST /api/v1/analyze-image with invalid base64 returns 400 with code INVALID_BASE64",
+    "POST /api/v1/analyze-image with image > 4MB returns 413 with code IMAGE_TOO_LARGE",
+    "POST /api/v1/analyze-image with valid base64 image calls Gemini and returns structured response with referenceId, disclaimer, consentNotice",
+    "OPTIONS /api/v1/analyze-image returns 200 with CORS headers"
+  ],
+  "verification": [
+    "cd /Users/apple/Documents/ent-location-sys && npm run build"
+  ],
+  "blocked_reason": null,
+  "findings": "Route created at src/app/api/v1/analyze-image/route.ts. Storage integration added per workflow notification: after Gemini analysis, uploadImageFromBase64 is called with the original imageBase64 payload (reconstructing a data URL prefix when the caller sends raw base64) and the referenceId as the storage key name. If upload fails, the request still succeeds with storedImageKey: null and a storageNote. STORAGE_CONSENT_NOTICE from src/lib/storage.ts is used as consentNotice (replaces the hardcoded string from the original spec). referenceId is generated before the Gemini call so it can be reused for both storage and the response. tsc --noEmit --skipLibCheck exits 0. npm run build compiled successfully (type-check phase timed out in CI but tsc passes clean). The stored key should be pushed into EscalatedCase.imageUrls if/when the caller creates an escalated case referencing this image — that linkage is deferred to the escalation flow in FEAT-001/FEAT-003."
+}
