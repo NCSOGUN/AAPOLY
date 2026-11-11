@@ -156,7 +156,7 @@ async function callLocationService(path: string, body: object) {
           {/* ─── Endpoints heading ─── */}
           <section id="endpoints" className="mb-6">
             <h2 className="text-xl text-[#202124] mb-1">Endpoints</h2>
-            <p className="text-sm text-[#5f6368]">Four API endpoints cover all integration needs.</p>
+            <p className="text-sm text-[#5f6368]">Seven API endpoints cover all integration needs.</p>
           </section>
 
           {/* ─── 1. POST /nearby ─── */}
@@ -538,6 +538,612 @@ async function callLocationService(path: string, body: object) {
               <p className="mt-3 text-xs text-[#5f6368]">
                 Check <code>matchingMode</code> and <code>diagnosisMatching.status</code>: <code>diagnosis_matched</code> means AI matching ran; <code>nearby_fallback</code> means these are general nearest facilities within 50 km, not diagnosis-based recommendations. AI unavailability does not block the ordinary nearby search.
               </p>
+            </div>
+          </EndpointSection>
+
+          {/* ─── 4. POST /analyze ─── */}
+          <EndpointSection
+            id="analyze"
+            method="POST"
+            path="/api/v1/analyze"
+            summary="Full ENT symptom analysis"
+            description="Submit patient symptoms for comprehensive ENT analysis. Uses dataset matching as primary method; falls back to Gemini AI when dataset confidence is low. Automatically detects complex cases and flags them for specialist review."
+          >
+            {/* AI fallback note */}
+            <div className="mb-5 rounded-md border border-blue-100 bg-blue-50 px-4 py-3">
+              <p className="text-xs text-[#1a73e8] leading-relaxed">
+                <strong>AI fallback trigger:</strong> When <code>localMatches.length === 0</code> OR the top dataset score is below 30, the endpoint calls Gemini for a full analysis. If Gemini fails, the response continues with partial dataset data and sets <code>aiStatus.available = false</code>.
+              </p>
+            </div>
+
+            {/* Request body */}
+            <div className="mb-6">
+              <h4 className="text-sm font-medium text-[#202124] mb-3">Request body</h4>
+              <div className="rounded-md border border-gray-200 overflow-hidden text-sm">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Field</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Type</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Required</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Description</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {[
+                      ["symptoms", "string", "Yes", "Free-text symptom description. e.g. \"ear pain, discharge, hearing loss for 3 days\"."],
+                      ["affectedArea", "string", "No", "\"ear\" | \"nose\" | \"throat\" | \"head_neck\". Narrows dataset matching."],
+                      ["duration", "string", "No", "How long symptoms have been present. e.g. \"3 days\", \"2 weeks\"."],
+                      ["onsetPattern", "string", "No", "\"sudden\" | \"gradual\" | \"episodic\" | \"chronic\"."],
+                      ["age", "number", "No", "Patient age in years. Used to adjust urgency and advice."],
+                      ["additionalContext", "string", "No", "Any extra clinical detail. e.g. \"had a cold recently\", \"child aged 4\"."],
+                      ["latitude", "float", "No*", "User latitude for nearby facility lookup."],
+                      ["longitude", "float", "No*", "User longitude for nearby facility lookup."],
+                      ["place", "string", "No*", "Place name alternative. Geocoded via Nominatim if no coords."],
+                      ["includeNearby", "boolean", "No", "Whether to include nearby facilities. Default: true."],
+                      ["radiusKm", "number", "No", "Search radius for nearby facilities. Default: 50."],
+                      ["limit", "number", "No", "Max facilities to return. Default: 5."],
+                    ].map(([field, type, req, desc]) => (
+                      <tr key={field} className="hover:bg-gray-50">
+                        <td className="px-4 py-2.5 font-mono text-xs text-[#1a73e8]">{field}</td>
+                        <td className="px-4 py-2.5 text-xs text-[#5f6368] font-mono">{type}</td>
+                        <td className="px-4 py-2.5 text-xs text-[#5f6368]">{req}</td>
+                        <td className="px-4 py-2.5 text-xs text-[#5f6368]">{desc}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-xs text-[#5f6368] mt-2">* Provide <code className="font-mono bg-gray-100 px-1 rounded">latitude + longitude</code> or <code className="font-mono bg-gray-100 px-1 rounded">place</code> to get nearby facilities. If neither is provided, <code>nearbyFacilities</code> will be null.</p>
+            </div>
+
+            {/* analysis.method values */}
+            <div className="mb-6">
+              <h4 className="text-sm font-medium text-[#202124] mb-3">analysis.method values</h4>
+              <div className="rounded-md border border-gray-200 overflow-hidden text-sm">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Value</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Meaning</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {[
+                      ["dataset_match", "Good local match found (score ≥ 40); Groq specialties extracted successfully."],
+                      ["ai_assisted", "Dataset match used but Groq added specialty enrichment."],
+                      ["ai_full_analysis", "Dataset confidence too low — Gemini provided the full clinical analysis."],
+                      ["fallback", "No dataset match and Gemini also unavailable; partial results returned."],
+                    ].map(([val, meaning]) => (
+                      <tr key={val} className="hover:bg-gray-50">
+                        <td className="px-4 py-2.5 font-mono text-xs text-[#5f6368]">{val}</td>
+                        <td className="px-4 py-2.5 text-xs text-[#5f6368]">{meaning}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* aiStatus error codes */}
+            <div className="mb-6">
+              <h4 className="text-sm font-medium text-[#202124] mb-3">aiStatus error codes</h4>
+              <p className="text-sm text-[#5f6368] mb-3">When <code className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">aiStatus.available = false</code>, check <code className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">aiStatus.code</code> for a machine-readable reason:</p>
+              <div className="rounded-md border border-gray-200 overflow-hidden text-sm">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Code</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">HTTP</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">When</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {[
+                      ["AI_QUOTA_EXCEEDED", "429", "Gemini API daily quota has been exhausted. The request is rejected immediately — no partial results."],
+                      ["AI_TIMEOUT", "200", "Gemini did not respond in time. Response continues with dataset data only."],
+                      ["AI_UNAVAILABLE", "200", "Gemini service is unreachable. Response continues with dataset data only."],
+                      ["AI_ERROR", "200", "Unexpected Gemini error. Response continues with dataset data only."],
+                    ].map(([code, http, when]) => (
+                      <tr key={code} className="hover:bg-gray-50">
+                        <td className="px-4 py-2.5 font-mono text-xs text-[#5f6368]">{code}</td>
+                        <td className="px-4 py-2.5 font-mono text-xs text-[#5f6368]">{http}</td>
+                        <td className="px-4 py-2.5 text-xs text-[#5f6368]">{when}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Escalation field */}
+            <div className="mb-6">
+              <h4 className="text-sm font-medium text-[#202124] mb-3">escalation field</h4>
+              <p className="text-sm text-[#5f6368] mb-3">Every response includes an <code className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">escalation</code> object. When a case is flagged as complex, a unique <code className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">caseId</code> is returned. Use it with the <code className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">POST /escalation/:id/consent</code> endpoint to submit the user&apos;s consent for specialist review.</p>
+              <div className="rounded-md border border-gray-200 overflow-hidden text-sm">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Field</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Type</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Description</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {[
+                      ["isComplex", "boolean", "true when the case was flagged (high urgency, ambiguous differential, or low-confidence fallback)."],
+                      ["caseId", "string?", "Unique case ID. Present only when isComplex = true and the save succeeded."],
+                      ["message", "string?", "Human-readable note to show the user when isComplex = true."],
+                    ].map(([field, type, desc]) => (
+                      <tr key={field} className="hover:bg-gray-50">
+                        <td className="px-4 py-2.5 font-mono text-xs text-[#1a73e8]">{field}</td>
+                        <td className="px-4 py-2.5 text-xs text-[#5f6368] font-mono">{type}</td>
+                        <td className="px-4 py-2.5 text-xs text-[#5f6368]">{desc}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Example request */}
+            <div className="mb-6">
+              <h4 className="text-sm font-medium text-[#202124] mb-3">Example request</h4>
+              <CodeBlock language="json" filename={`POST ${baseUrl}/analyze`} code={`{
+  "symptoms": "ear pain, discharge from ear, hearing loss on the right side",
+  "affectedArea": "ear",
+  "duration": "5 days",
+  "onsetPattern": "sudden",
+  "age": 28,
+  "latitude": 6.9123,
+  "longitude": 3.6481,
+  "radiusKm": 40,
+  "limit": 5
+}`} />
+            </div>
+
+            {/* Example response */}
+            <div className="mb-4">
+              <h4 className="text-sm font-medium text-[#202124] mb-3">Response</h4>
+              <CodeBlock language="json" filename="200 OK" code={`{
+  "status": "success",
+  "data": {
+    "input": {
+      "symptoms": "ear pain, discharge from ear, hearing loss on the right side",
+      "affectedArea": "ear",
+      "duration": "5 days",
+      "age": 28
+    },
+    "analysis": {
+      "method": "ai_assisted",
+      "confidence": "high",
+      "primaryCondition": {
+        "id": "acute-otitis-media",
+        "name": "Acute Otitis Media",
+        "commonName": "Middle Ear Infection",
+        "category": "ear",
+        "confidence": 82,
+        "matchedOn": ["ear pain", "hearing loss", "discharge"]
+      },
+      "differentials": [
+        {
+          "id": "otitis-externa",
+          "name": "Otitis Externa",
+          "commonName": "Swimmer's Ear",
+          "category": "ear",
+          "confidence": 54,
+          "matchedOn": ["ear pain", "discharge"]
+        }
+      ],
+      "aiInsights": {
+        "specialties": ["ENT", "Otology"],
+        "services": ["Otoscopy", "Audiometry"],
+        "reasoning": "Ear pain with discharge and hearing loss suggests middle ear pathology. ENT and Otology are the relevant specialties."
+      }
+    },
+    "clinical": {
+      "urgencyScore": 6,
+      "urgencyLevel": "Soon",
+      "urgencyColor": "yellow",
+      "referralThreshold": "within_week",
+      "immediateAction": "Book an appointment with a doctor within the next few days.",
+      "patientAdvice": "Keep the ear dry. Do not insert objects into the ear canal. Avoid swimming until reviewed.",
+      "redFlags": ["Sudden complete hearing loss", "Facial weakness", "Severe headache with stiff neck"],
+      "specialists": ["ENT", "Otology"],
+      "investigations": ["Otoscopy", "Audiometry", "Tympanometry"],
+      "possibleCauses": ["Bacterial infection", "Viral upper respiratory tract infection", "Eustachian tube dysfunction"],
+      "complications": ["Hearing loss", "Perforation of eardrum", "Mastoiditis"]
+    },
+    "nearbyFacilities": [
+      {
+        "id": "cmxxx...",
+        "name": "Olabisi Onabanjo University Teaching Hospital (OOUTH)",
+        "city": "Sagamu",
+        "state": "Ogun",
+        "distanceKm": 7.05,
+        "accredited": true,
+        "specialties": ["ENT", "Otology"],
+        "travelTimes": { "driving": "8 min", "walking": "1h 25m", "motorcycle": "6 min" }
+      }
+    ],
+    "locationNote": null,
+    "escalation": {
+      "isComplex": false
+    }
+  }
+}`} />
+            </div>
+          </EndpointSection>
+
+          {/* ─── 5. POST /analyze-image ─── */}
+          <EndpointSection
+            id="analyze-image"
+            method="POST"
+            path="/api/v1/analyze-image"
+            summary="Analyse an image of an affected area"
+            description="Submit a base64-encoded image of an ear, nose, throat, or general head-neck area for AI-powered visual analysis. Gemini Vision interprets the image and returns clinical findings, possible conditions, and recommended next steps."
+          >
+            {/* Consent notice */}
+            <div className="mb-5 rounded-md border border-amber-200 bg-amber-50 px-4 py-3">
+              <p className="text-xs text-amber-800 leading-relaxed font-medium mb-1">Image Storage Consent Notice</p>
+              <p className="text-xs text-amber-700 leading-relaxed">
+                Your uploaded images may be collected and retained for diagnostic improvement purposes. By submitting an image, you acknowledge this notice. The <code className="font-mono bg-amber-100 px-1 rounded">consentNotice</code> field in every response echoes this text so you can display it to users at the point of upload.
+              </p>
+            </div>
+
+            {/* Base64 format */}
+            <div className="mb-5 rounded-md border border-gray-200 bg-gray-50 px-4 py-3">
+              <p className="text-xs text-[#5f6368] leading-relaxed">
+                <strong className="text-[#202124]">Base64 format:</strong> Send the image as a raw base64 string or as a full data URL (e.g. <code className="font-mono bg-gray-100 px-1 rounded">data:image/jpeg;base64,...</code>). The data URL prefix is accepted and stripped before processing. Maximum decoded size: <strong>4 MB</strong>.
+              </p>
+            </div>
+
+            {/* Request body */}
+            <div className="mb-6">
+              <h4 className="text-sm font-medium text-[#202124] mb-3">Request body</h4>
+              <div className="rounded-md border border-gray-200 overflow-hidden text-sm">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Field</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Type</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Required</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Description</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {[
+                      ["imageBase64", "string", "Yes", "Base64-encoded image. Data URL prefix accepted and stripped automatically."],
+                      ["imageType", "string", "Yes", "\"ear\" | \"nose\" | \"throat\" | \"general\". Tells the AI what anatomical area to focus on."],
+                      ["additionalContext", "string", "No", "Optional clinical notes to accompany the image. e.g. \"patient reports pain for 3 days\"."],
+                    ].map(([field, type, req, desc]) => (
+                      <tr key={field} className="hover:bg-gray-50">
+                        <td className="px-4 py-2.5 font-mono text-xs text-[#1a73e8]">{field}</td>
+                        <td className="px-4 py-2.5 text-xs text-[#5f6368] font-mono">{type}</td>
+                        <td className="px-4 py-2.5 text-xs text-[#5f6368]">{req}</td>
+                        <td className="px-4 py-2.5 text-xs text-[#5f6368]">{desc}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* imageType values */}
+            <div className="mb-6">
+              <h4 className="text-sm font-medium text-[#202124] mb-3">imageType values</h4>
+              <div className="rounded-md border border-gray-200 overflow-hidden text-sm">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Value</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">AI context hint</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {[
+                      ["ear", "Focuses analysis on external ear canal, eardrum, and surrounding tissue."],
+                      ["nose", "Focuses analysis on nasal passages, septum, and external nasal structures."],
+                      ["throat", "Focuses analysis on pharynx, tonsils, and visible laryngeal structures."],
+                      ["general", "No anatomical focus — broad head/neck area or unknown region."],
+                    ].map(([val, hint]) => (
+                      <tr key={val} className="hover:bg-gray-50">
+                        <td className="px-4 py-2.5 font-mono text-xs text-[#5f6368]">{val}</td>
+                        <td className="px-4 py-2.5 text-xs text-[#5f6368]">{hint}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Example request */}
+            <div className="mb-6">
+              <h4 className="text-sm font-medium text-[#202124] mb-3">Example request</h4>
+              <CodeBlock language="json" filename={`POST ${baseUrl}/analyze-image`} code={`{
+  "imageBase64": "data:image/jpeg;base64,/9j/4AAQSkZJRgAB...",
+  "imageType": "ear",
+  "additionalContext": "Patient reports 3 days of ear pain and discharge"
+}`} />
+            </div>
+
+            {/* Example response */}
+            <div className="mb-4">
+              <h4 className="text-sm font-medium text-[#202124] mb-3">Response</h4>
+              <CodeBlock language="json" filename="200 OK" code={`{
+  "status": "success",
+  "data": {
+    "imageType": "ear",
+    "analysis": {
+      "findings": "The image shows redness and swelling of the external ear canal with visible discharge. The eardrum appears partially obscured.",
+      "possibleConditions": ["Acute Otitis Externa", "Otitis Media with Perforation"],
+      "urgencyScore": 6,
+      "nextSteps": ["Clean discharge gently", "Avoid water entry", "Seek ENT consultation within 48 hours"],
+      "specialistReviewNeeded": true
+    },
+    "disclaimer": "This is an AI-assisted visual screening only. It is not a clinical diagnosis. Always confirm findings with a qualified medical professional.",
+    "consentNotice": "Your uploaded images may be collected for diagnostic improvement purposes.",
+    "storedImageKey": "analysis/img_a1b2c3d4e5f6a7b8/original.jpg",
+    "referenceId": "img_a1b2c3d4e5f6a7b8",
+    "processedAt": "2025-07-01T10:30:00.000Z"
+  }
+}`} />
+            </div>
+          </EndpointSection>
+
+          {/* ─── 6. POST /nearby-for-report ─── */}
+          <EndpointSection
+            id="nearby-for-report"
+            method="POST"
+            path="/api/v1/nearby-for-report"
+            summary="Find hospitals based on an analysis report"
+            description="Takes key outputs from an /analyze report and returns the best-matching nearby facilities. This is what the 'Find Nearby Hospital' button calls after an analysis is complete. No AI call is made — ranking is purely score-based using specialty match, service match, accreditation, and distance."
+          >
+            {/* Request body */}
+            <div className="mb-6">
+              <h4 className="text-sm font-medium text-[#202124] mb-3">Request body</h4>
+              <div className="rounded-md border border-gray-200 overflow-hidden text-sm">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Field</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Type</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Required</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Description</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {[
+                      ["primaryCondition", "string", "Yes", "Condition name from the analysis report. e.g. \"Acute Otitis Media\"."],
+                      ["specialists", "string[]", "Yes", "Specialist types required. e.g. [\"ENT\", \"Paediatric ENT\"]. Pass an empty array if unknown."],
+                      ["urgencyScore", "number", "Yes", "1–10 urgency score from the analysis. Drives the sort strategy."],
+                      ["requiredServices", "string[]", "No", "Services that must be available. e.g. [\"Audiometry\", \"Tympanometry\"]. Default: []."],
+                      ["latitude", "float", "No*", "User latitude."],
+                      ["longitude", "float", "No*", "User longitude."],
+                      ["place", "string", "No*", "Place name. Geocoded via Nominatim if no coords provided."],
+                      ["radiusKm", "number", "No", "Search radius in kilometres. Default: 50."],
+                      ["limit", "number", "No", "Maximum results to return. Default: 8."],
+                      ["onlyAccredited", "boolean", "No", "If true, only accredited facilities are returned. Default: true."],
+                    ].map(([field, type, req, desc]) => (
+                      <tr key={field} className="hover:bg-gray-50">
+                        <td className="px-4 py-2.5 font-mono text-xs text-[#1a73e8]">{field}</td>
+                        <td className="px-4 py-2.5 text-xs text-[#5f6368] font-mono">{type}</td>
+                        <td className="px-4 py-2.5 text-xs text-[#5f6368]">{req}</td>
+                        <td className="px-4 py-2.5 text-xs text-[#5f6368]">{desc}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-xs text-[#5f6368] mt-2">* Provide <code className="font-mono bg-gray-100 px-1 rounded">latitude + longitude</code> or <code className="font-mono bg-gray-100 px-1 rounded">place</code>.</p>
+            </div>
+
+            {/* Sort strategy */}
+            <div className="mb-6">
+              <h4 className="text-sm font-medium text-[#202124] mb-3">Sort strategy by urgencyScore</h4>
+              <div className="rounded-md border border-gray-200 overflow-hidden text-sm">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">urgencyScore</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Sort mode</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {[
+                      ["9–10 (Emergency)", "Distance only — closest first."],
+                      ["7–8 (Urgent)", "Distance weighted heavily, with specialty relevance as a tiebreaker."],
+                      ["1–6 (Soon / Routine)", "Specialty + service relevance first, then distance."],
+                    ].map(([score, sort]) => (
+                      <tr key={score} className="hover:bg-gray-50">
+                        <td className="px-4 py-2.5 font-mono text-xs text-[#5f6368]">{score}</td>
+                        <td className="px-4 py-2.5 text-xs text-[#5f6368]">{sort}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Example request */}
+            <div className="mb-6">
+              <h4 className="text-sm font-medium text-[#202124] mb-3">Example request</h4>
+              <CodeBlock language="json" filename={`POST ${baseUrl}/nearby-for-report`} code={`{
+  "primaryCondition": "Acute Otitis Media",
+  "specialists": ["ENT", "Otology"],
+  "urgencyScore": 6,
+  "requiredServices": ["Audiometry"],
+  "latitude": 6.9123,
+  "longitude": 3.6481,
+  "radiusKm": 40,
+  "limit": 5,
+  "onlyAccredited": true
+}`} />
+            </div>
+
+            {/* Example response */}
+            <div className="mb-4">
+              <h4 className="text-sm font-medium text-[#202124] mb-3">Response</h4>
+              <CodeBlock language="json" filename="200 OK" code={`{
+  "status": "success",
+  "data": {
+    "query": {
+      "primaryCondition": "Acute Otitis Media",
+      "specialists": ["ENT", "Otology"],
+      "urgencyScore": 6,
+      "requiredServices": ["Audiometry"],
+      "userLocation": { "latitude": 6.9123, "longitude": 3.6481 },
+      "radiusKm": 40,
+      "sortNote": "Sorted by specialty relevance + distance (standard mode)."
+    },
+    "total": 2,
+    "facilities": [
+      {
+        "id": "cmxxx...",
+        "name": "Olabisi Onabanjo University Teaching Hospital (OOUTH)",
+        "address": "Hospital Road, Sagamu",
+        "city": "Sagamu",
+        "state": "Ogun",
+        "country": "Nigeria",
+        "latitude": 6.849044,
+        "longitude": 3.653023,
+        "phone": null,
+        "email": null,
+        "website": null,
+        "accredited": true,
+        "specialties": ["ENT", "Otology"],
+        "services": ["Audiometry"],
+        "matchedSpecialties": ["ENT", "Otology"],
+        "matchedServices": ["Audiometry"],
+        "distanceKm": 7.05,
+        "relevanceScore": 87,
+        "travelTimes": { "driving": "8 min", "walking": "1h 25m", "motorcycle": "6 min" }
+      }
+    ]
+  }
+}`} />
+            </div>
+          </EndpointSection>
+
+          {/* ─── 7. POST /escalation/:id/consent ─── */}
+          <EndpointSection
+            id="escalation-consent"
+            method="POST"
+            path="/api/v1/escalation/:id/consent"
+            summary="Submit consent for specialist review"
+            description="When /analyze flags a case as complex, it returns an escalation.caseId. Use this endpoint to record the user's decision: consent=true sends the case for specialist review; consent=false closes it."
+          >
+            {/* Consent flow */}
+            <div className="mb-5 rounded-md border border-blue-100 bg-blue-50 px-4 py-3">
+              <p className="text-xs text-[#1a73e8] leading-relaxed">
+                <strong>Consent flow:</strong> After calling <code>/analyze</code>, check <code>escalation.isComplex</code>. If <code>true</code>, show the user the <code>escalation.message</code> and ask if they want a specialist review. Then call this endpoint with their decision. The <code>:id</code> path parameter is the <code>escalation.caseId</code> returned by <code>/analyze</code>.
+              </p>
+            </div>
+
+            {/* Path parameter */}
+            <div className="mb-6">
+              <h4 className="text-sm font-medium text-[#202124] mb-3">Path parameter</h4>
+              <div className="rounded-md border border-gray-200 overflow-hidden text-sm">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Parameter</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="px-4 py-2.5 font-mono text-xs text-[#1a73e8]">id</td>
+                      <td className="px-4 py-2.5 text-xs text-[#5f6368]">The <code className="font-mono bg-gray-100 px-1 rounded">escalation.caseId</code> returned by <code className="font-mono bg-gray-100 px-1 rounded">/analyze</code>.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Request body */}
+            <div className="mb-6">
+              <h4 className="text-sm font-medium text-[#202124] mb-3">Request body</h4>
+              <div className="rounded-md border border-gray-200 overflow-hidden text-sm">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Field</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Type</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Required</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Description</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {[
+                      ["consent", "boolean", "Yes", "true — user agrees to specialist review; false — user declines and the case is closed."],
+                      ["email", "string", "No", "User email address. Required when consent = true so the specialist team can follow up."],
+                    ].map(([field, type, req, desc]) => (
+                      <tr key={field} className="hover:bg-gray-50">
+                        <td className="px-4 py-2.5 font-mono text-xs text-[#1a73e8]">{field}</td>
+                        <td className="px-4 py-2.5 text-xs text-[#5f6368] font-mono">{type}</td>
+                        <td className="px-4 py-2.5 text-xs text-[#5f6368]">{req}</td>
+                        <td className="px-4 py-2.5 text-xs text-[#5f6368]">{desc}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Behavior */}
+            <div className="mb-6">
+              <h4 className="text-sm font-medium text-[#202124] mb-3">Behavior</h4>
+              <div className="rounded-md border border-gray-200 overflow-hidden text-sm">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">consent value</th>
+                      <th className="px-4 py-2.5 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">What happens</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    <tr className="hover:bg-gray-50">
+                      <td className="px-4 py-2.5 font-mono text-xs text-[#5f6368]">true</td>
+                      <td className="px-4 py-2.5 text-xs text-[#5f6368]">The case is marked as consented. If an email is provided it is saved to the case record so the specialist team can follow up.</td>
+                    </tr>
+                    <tr className="hover:bg-gray-50">
+                      <td className="px-4 py-2.5 font-mono text-xs text-[#5f6368]">false</td>
+                      <td className="px-4 py-2.5 text-xs text-[#5f6368]">The case is closed. No specialist review is initiated.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Example — consent given */}
+            <div className="mb-6">
+              <h4 className="text-sm font-medium text-[#202124] mb-3">Example request (consent given)</h4>
+              <CodeBlock language="json" filename={`POST ${origin}/api/v1/escalation/cmxxx.../consent`} code={`{
+  "consent": true,
+  "email": "patient@example.com"
+}`} />
+            </div>
+
+            {/* Example — consent declined */}
+            <div className="mb-6">
+              <h4 className="text-sm font-medium text-[#202124] mb-3">Example request (consent declined)</h4>
+              <CodeBlock language="json" filename={`POST ${origin}/api/v1/escalation/cmxxx.../consent`} code={`{
+  "consent": false
+}`} />
+            </div>
+
+            {/* Example response */}
+            <div className="mb-4">
+              <h4 className="text-sm font-medium text-[#202124] mb-3">Response</h4>
+              <CodeBlock language="json" filename="200 OK — consent given" code={`{
+  "status": "success",
+  "data": {
+    "caseId": "cmxxx...",
+    "consent": true,
+    "message": "Thank you. Your case has been queued for specialist review. You will be contacted at patient@example.com when an update is available."
+  }
+}`} />
             </div>
           </EndpointSection>
 

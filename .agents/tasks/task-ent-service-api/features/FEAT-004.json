@@ -1,0 +1,26 @@
+{
+  "id": "FEAT-004",
+  "type": "docs",
+  "description": "Update /docs page and DocsSidebar to document all new endpoints. Independent of FEATs 001-003 in terms of code (no imports from new files), but logically follows them since it documents what they produce. The docs page uses a dynamic baseUrl derived from request headers — maintain this pattern throughout.",
+  "status": "completed",
+  "steps": [
+    "1. Read src/app/api/v1/nearby-for-report/route.ts to understand its request/response shape before writing docs for it.",
+    "2. In src/components/docs/sidebar.tsx: in the sections array, find the entry with id='endpoints' and add four children to its children array (after the existing three): { id: 'analyze', label: 'POST /analyze' }, { id: 'analyze-image', label: 'POST /analyze-image' }, { id: 'nearby-for-report', label: 'POST /nearby-for-report' }, { id: 'escalation-consent', label: 'POST /escalation/:id/consent' }.",
+    "3. In src/app/docs/page.tsx, after the existing match-by-diagnosis EndpointSection, add a new EndpointSection with id='analyze', method='POST', path='/api/v1/analyze', summary='Full ENT symptom analysis', description='Submit patient symptoms for comprehensive ENT analysis. Uses dataset matching as primary method; falls back to Gemini AI when dataset confidence is low. Automatically detects complex cases and flags them for specialist review.' Include: (a) request fields table covering all 12 fields (symptoms, affectedArea, duration, onsetPattern, age, additionalContext, latitude, longitude, place, includeNearby, radiusKm, limit); (b) a note box explaining the AI fallback trigger (localMatches.length === 0 OR score < 30); (c) analysis.method values table (dataset_match, ai_assisted, ai_full_analysis, fallback); (d) aiStatus error codes table (AI_QUOTA_EXCEEDED, AI_TIMEOUT, AI_UNAVAILABLE, AI_ERROR); (e) escalation field explanation; (f) example request and response JSON using `baseUrl` variable for URLs.",
+    "4. In src/app/docs/page.tsx, add EndpointSection id='analyze-image', method='POST', path='/api/v1/analyze-image'. Include: (a) consent notice callout box; (b) base64 format explanation (data URL prefix accepted, stripped before processing); (c) 4MB size limit note; (d) imageType values (ear, nose, throat, general); (e) request fields table; (f) example request/response JSON.",
+    "5. In src/app/docs/page.tsx, add EndpointSection id='nearby-for-report', method='POST', path='/api/v1/nearby-for-report'. Document based on actual route file content read in step 1. Include request fields, example request/response.",
+    "6. In src/app/docs/page.tsx, add EndpointSection id='escalation-consent', method='POST', path='/api/v1/escalation/:id/consent'. Include: (a) explanation of the consent flow (caseId comes from /analyze escalation.caseId); (b) request fields table (consent: boolean, email?: string); (c) behavior: consent=true saves email and marks case as consented; consent=false closes the case; (d) example request/response."
+  ],
+  "acceptance_criteria": [
+    "npm run build exits 0",
+    "DocsSidebar sections array has four new children under endpoints",
+    "Docs page has four new EndpointSection blocks with correct ids matching sidebar",
+    "All code examples in new sections use the dynamic baseUrl variable, not hardcoded URLs",
+    "Consent notice text appears in the analyze-image section"
+  ],
+  "verification": [
+    "cd /Users/apple/Documents/ent-location-sys && npm run build"
+  ],
+  "blocked_reason": null,
+  "findings": "All four endpoint sections added to docs/page.tsx (analyze, analyze-image, nearby-for-report, escalation-consent). DocsSidebar children array updated with four new entries under the endpoints section. All code examples use the dynamic baseUrl and origin variables. Consent notice callout present in analyze-image section. npm run build exits 0 with no TypeScript errors."
+}
