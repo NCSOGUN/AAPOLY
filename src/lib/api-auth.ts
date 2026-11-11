@@ -19,6 +19,32 @@ export async function checkApiKey(req: NextRequest): Promise<NextResponse | null
 
   if (!providedKey) return unauthorized();
 
+  // Hospital / doctor desktop apps authenticate with a long-lived "hu_" token
+  // instead of a managed API key. The token is stored plaintext (it is a bearer
+  // token the admin controls), so a direct lookup + active check is enough.
+  if (providedKey.startsWith("hu_")) {
+    let hospitalUser;
+    try {
+      hospitalUser = await prisma.hospitalUser.findUnique({
+        where: { accessToken: providedKey, active: true },
+        select: { id: true },
+      });
+    } catch (error) {
+      console.error("[API key authentication] hospital token lookup failed:", error);
+      return keyStoreUnavailable();
+    }
+    if (!hospitalUser) return unauthorized();
+    try {
+      await prisma.hospitalUser.update({
+        where: { id: hospitalUser.id },
+        data: { lastLoginAt: new Date() },
+      });
+    } catch (error) {
+      console.error("[API key authentication] hospital lastLogin update failed:", error);
+    }
+    return null; // valid
+  }
+
   // The key prefix narrows bcrypt comparisons to keys created with that prefix.
   // Include the older 12-character prefix format during the rollout.
   const prefixes = [...new Set([providedKey.slice(0, 16), providedKey.slice(0, 12)])];

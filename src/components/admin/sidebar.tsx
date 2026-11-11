@@ -9,6 +9,7 @@ import {
   LogOut,
   BookOpen,
   KeyRound,
+  UserRound,
   AlertCircle,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
@@ -19,6 +20,7 @@ const navItems = [
   { label: "Facilities",  href: "/admin/facilities",  icon: Building2 },
   { label: "Specialties", href: "/admin/specialties", icon: Stethoscope },
   { label: "API Keys",    href: "/admin/api-keys",    icon: KeyRound },
+  { label: "Hospital Users", href: "/admin/hospital-users", icon: UserRound },
   { label: "Escalated Cases", href: "/admin/escalated-cases", icon: AlertCircle },
 ];
 

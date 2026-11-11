@@ -32,6 +32,7 @@ model Facility {
 
   specialties FacilitySpecialty[]
   services    FacilityService[]
+  users       HospitalUser[]
 }
 
 model Specialty {
@@ -142,4 +143,23 @@ model Condition {
 
   @@index([category])
   @@index([urgencyScore])
+}
+
+model HospitalUser {
+  id              String    @id @default(cuid())
+  name            String
+  email           String    @unique
+  passwordHash    String    // bcrypt hashed
+  role            String    @default("doctor") // doctor | specialist | nurse | admin
+  specialization  String?   // e.g. "Otologist", "Rhinologist"
+  phone           String?
+  licenseNumber   String?   // professional license/registration number
+  facilityId      String?
+  facility        Facility? @relation(fields: [facilityId], references: [id])
+  accessToken     String    @unique
+  tokenIssuedAt   DateTime  @default(now())
+  active          Boolean   @default(true)
+  lastLoginAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
