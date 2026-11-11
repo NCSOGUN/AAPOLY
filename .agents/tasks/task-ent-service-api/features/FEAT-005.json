@@ -1,0 +1,23 @@
+{
+  "id": "FEAT-005",
+  "type": "chore",
+  "description": "Cross-FEAT integration verification: full build check after all FEATs complete, confirming no seam errors between FEAT-001 through FEAT-004. This FEAT has no code changes — it is the convergence check run by the fixer step.",
+  "status": "pending",
+  "steps": [
+    "1. Run `cd /Users/apple/Documents/ent-location-sys && npm run build`. Fix any TypeScript errors introduced at the seams between FEATs (e.g., type mismatches in imports shared between analyze/route.ts and ai-matching.ts, missing prisma client types after schema change).",
+    "2. Confirm all new route files are importable: src/app/api/v1/analyze-image/route.ts, src/app/api/v1/escalation/[id]/consent/route.ts, src/app/api/admin/escalated-cases/route.ts, src/app/api/admin/escalated-cases/[id]/route.ts.",
+    "3. Confirm admin UI pages build: src/app/admin/escalated-cases/page.tsx and escalated-cases-client.tsx.",
+    "4. Confirm docs page builds: src/app/docs/page.tsx with all four new EndpointSection blocks.",
+    "5. Confirm next.config.ts is valid TypeScript and the new admin CORS entry is syntactically correct."
+  ],
+  "acceptance_criteria": [
+    "npm run build exits 0 with no errors or warnings about missing modules",
+    "All new route files appear in the Next.js build output",
+    "No TypeScript errors in any file across the project"
+  ],
+  "verification": [
+    "cd /Users/apple/Documents/ent-location-sys && npm run build"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

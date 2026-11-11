@@ -1,0 +1,7 @@
+{
+  "task_id": "task-ent-service-api",
+  "task_description": "ENT Service API: Gemini AI fallback in /analyze, complex case escalation with admin UI, image analysis endpoint, updated docs, and admin CORS headers.",
+  "status": "pending",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003", "FEAT-004", "FEAT-005"],
+  "blocked_reason": null
+}

@@ -1,0 +1,31 @@
+{
+  "project_type": "Next.js 15 App Router + Prisma + PostgreSQL — ENT location intelligence service with admin UI",
+  "language": "TypeScript",
+  "build_system": "Next.js 15 with standard next build. No monorepo. Build command also runs `prisma generate` via postinstall.",
+  "test_framework": "None configured — verification is done via `npm run build` (TypeScript compile + Next.js build).",
+  "build_command": "npm run build",
+  "test_command": "npm run build",
+  "verification_instructions": "Run `npm run build` from /Users/apple/Documents/ent-location-sys. Build must exit 0 with no TypeScript errors. Schema changes require `npm run db:push` before the build.",
+  "snapshot_or_generated_files": "prisma/schema.prisma changes require running `npm run db:push` which also regenerates the Prisma client. No other generated files are checked in.",
+  "environment_constraints": "GEMINI_API_KEY must be set in .env.local for Gemini calls to work at runtime; not needed for build. DATABASE_URL must be set for db:push.",
+  "contribution_requirements": "No AGENTS.md or CONTRIBUTING.md found. Follow existing code patterns: Google flat design (border-gray-200, #1a73e8 primary, no shadows, no rounded-xl), server component + client component split for admin pages, await auth() for admin routes, await checkApiKey(req) for v1 routes.",
+  "key_patterns": "Admin API routes: import { auth } from '@/lib/auth', call `const session = await auth()`, return 401 if null. V1 API routes: `const authError = await checkApiKey(req); if (authError) return authError;`. Admin UI: server component fetches data via prisma, passes serialized props to 'use client' component. Docs page: uses `headers()` from 'next/headers' to build baseUrl dynamically; uses EndpointSection, CodeBlock, Badge, BaseUrlBanner components from @/components/docs/.",
+  "relevant_files": [
+    "src/app/api/v1/analyze/route.ts",
+    "src/lib/ai-matching.ts",
+    "src/lib/api-auth.ts",
+    "src/lib/auth.ts",
+    "src/lib/condition-matcher.ts",
+    "prisma/schema.prisma",
+    "src/components/admin/sidebar.tsx",
+    "src/app/admin/api-keys/page.tsx",
+    "src/app/admin/api-keys/api-keys-client.tsx",
+    "src/app/api/admin/api-keys/route.ts",
+    "src/app/api/admin/api-keys/[id]/route.ts",
+    "src/app/docs/page.tsx",
+    "src/components/docs/sidebar.tsx",
+    "next.config.ts",
+    "package.json"
+  ],
+  "directory_structure": "src/app/api/v1/ — public API routes (checkApiKey guard). src/app/api/admin/ — admin API routes (auth() guard). src/app/admin/ — admin Next.js pages (server+client split). src/app/docs/ — public API docs page. src/components/admin/ — admin UI components including sidebar. src/components/docs/ — docs page components (EndpointSection, CodeBlock, Badge, BaseUrlBanner, DocsSidebar). src/lib/ — shared server libs (prisma, auth, api-auth, ai-matching, condition-matcher). prisma/ — schema.prisma and seed scripts."
+}
