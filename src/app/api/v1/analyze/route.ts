@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkApiKey } from "@/lib/api-auth";
 import { matchConditions, getConditionById } from "@/lib/condition-matcher";
-import { extractSpecialtiesFromDiagnosis } from "@/lib/ai-matching";
+import { extractSpecialtiesFromDiagnosis, callGeminiFullAnalysis, GeminiAIError } from "@/lib/ai-matching";
+import { prisma } from "@/lib/prisma";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -38,7 +39,7 @@ interface AnalyzeResponse {
 
     // Analysis
     analysis: {
-      method: "dataset_match" | "ai_assisted" | "ai_only" | "fallback";
+      method: "dataset_match" | "ai_assisted" | "ai_only" | "fallback" | "ai_full_analysis";
       confidence: "high" | "moderate" | "low";
       primaryCondition: ConditionSummary | null;
       differentials: ConditionSummary[];
@@ -67,6 +68,20 @@ interface AnalyzeResponse {
     // Nearby facilities (if coords provided)
     nearbyFacilities: NearbyFacility[] | null;
     locationNote: string | null;
+
+    // AI status (populated when Gemini fallback fails)
+    aiStatus?: {
+      available: boolean;
+      code?: string;
+      message?: string;
+    };
+
+    // Escalation
+    escalation: {
+      isComplex: boolean;
+      caseId?: string;
+      message?: string;
+    };
   };
   message?: string;
 }
@@ -80,7 +95,7 @@ interface ConditionSummary {
   matchedOn: string[];
 }
 
-type AnalysisMethod = "dataset_match" | "ai_assisted" | "ai_only" | "fallback";
+type AnalysisMethod = "dataset_match" | "ai_assisted" | "ai_only" | "fallback" | "ai_full_analysis";
 
 interface NearbyFacility {
   id: string;
@@ -232,16 +247,56 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const topLocal = localMatches[0] ?? null;
     const hasGoodLocalMatch = topLocal && topLocal.score >= 40;
 
-    // ── Step 2: AI analysis (always run for richer output) ───────────────────
+    // ── Step 2: AI analysis ────────────────────────────────────────────────────
     let aiInsights: { specialties: string[]; services: string[]; reasoning: string } | null = null;
     let analysisMethod: AnalysisMethod = "dataset_match";
+    let aiStatus: { available: boolean; code?: string; message?: string } | undefined = undefined;
 
-    try {
-      aiInsights = await extractSpecialtiesFromDiagnosis(clinicalText);
-      analysisMethod = hasGoodLocalMatch ? "ai_assisted" : "ai_only";
-    } catch {
-      // AI unavailable — fall back to dataset only
-      analysisMethod = hasGoodLocalMatch ? "dataset_match" : "fallback";
+    // Gemini fallback: trigger when local match is absent or weak
+    const needsGeminiFallback = localMatches.length === 0 || (topLocal && topLocal.score < 30);
+
+    // Merged AI fields from Gemini (when used)
+    let geminiUrgencyScore: number | null = null;
+    let geminiImmediateAdvice: string | null = null;
+    let geminiRedFlags: string[] | null = null;
+    let geminiSpecialists: string[] | null = null;
+
+    if (needsGeminiFallback) {
+      try {
+        const geminiResult = await callGeminiFullAnalysis(clinicalText);
+        analysisMethod = "ai_full_analysis";
+        geminiUrgencyScore = geminiResult.urgencyScore;
+        geminiImmediateAdvice = geminiResult.immediateAdvice;
+        geminiRedFlags = geminiResult.redFlags;
+        geminiSpecialists = geminiResult.specialists;
+      } catch (error) {
+        if (error instanceof GeminiAIError) {
+          // AI_QUOTA_EXCEEDED → return 429 immediately
+          if (error.code === "AI_QUOTA_EXCEEDED") {
+            return NextResponse.json(
+              {
+                status: "error",
+                message: "AI quota exceeded. Please try again later.",
+                aiStatus: { available: false, code: error.code, message: error.message },
+              },
+              { status: 429 }
+            );
+          }
+          // All other Gemini errors → continue with partial data
+          aiStatus = { available: false, code: error.code, message: error.message };
+          analysisMethod = hasGoodLocalMatch ? "dataset_match" : "fallback";
+        } else {
+          analysisMethod = hasGoodLocalMatch ? "dataset_match" : "fallback";
+        }
+      }
+    } else {
+      // Good local match — still run Groq for specialty enrichment
+      try {
+        aiInsights = await extractSpecialtiesFromDiagnosis(clinicalText);
+        analysisMethod = hasGoodLocalMatch ? "ai_assisted" : "ai_only";
+      } catch {
+        analysisMethod = hasGoodLocalMatch ? "dataset_match" : "fallback";
+      }
     }
 
     // ── Step 3: Build primary condition output ────────────────────────────────
@@ -250,7 +305,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       primaryConditionFull = await getConditionById(topLocal.conditionId);
     }
 
-    const urgencyScore = primaryConditionFull?.urgencyScore ?? 4;
+    const urgencyScore = geminiUrgencyScore ?? primaryConditionFull?.urgencyScore ?? 4;
     const urgencyInfo = urgencyLabel(urgencyScore);
 
     // ── Step 4: Confidence ────────────────────────────────────────────────────
@@ -337,6 +392,63 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         matchedOn: [...m.matchedSymptoms.slice(0, 2), ...m.matchedKeywords.slice(0, 1)],
       }));
 
+    // ── Step 9: Escalation detection ──────────────────────────────────────────
+    const top3Scores = localMatches.slice(0, 3).map((m) => m.score);
+    const maxScore = top3Scores.length > 0 ? Math.max(...top3Scores) : 0;
+    const minScore = top3Scores.length > 0 ? Math.min(...top3Scores) : 0;
+
+    const isComplex =
+      urgencyScore >= 8 ||
+      (localMatches.length >= 3 && maxScore - minScore <= 15) ||
+      (confidence === "low" && aiInsights === null) ||
+      symptoms.trim().length > 300 ||
+      analysisMethod === "fallback";
+
+    let escalation: { isComplex: boolean; caseId?: string; message?: string };
+
+    if (isComplex) {
+      try {
+        const clinicalOutput = {
+          urgencyScore,
+          urgencyLevel: urgencyInfo.level,
+          urgencyColor: urgencyInfo.color,
+          referralThreshold: primaryConditionFull?.referralThreshold ?? "routine",
+          immediateAction: geminiImmediateAdvice ?? urgencyInfo.action,
+          patientAdvice: primaryConditionFull?.patientAdvice ?? "Please consult a healthcare provider for a proper evaluation.",
+          redFlags: geminiRedFlags ?? primaryConditionFull?.redFlags ?? [],
+          specialists: geminiSpecialists ?? primaryConditionFull?.specialistNeeded ?? aiInsights?.specialties ?? ["ENT"],
+        };
+
+        const escalatedCase = await prisma.escalatedCase.create({
+          data: {
+            symptoms,
+            affectedArea: affectedArea ?? null,
+            duration: duration ?? null,
+            age: age ?? null,
+            additionalContext: additionalContext ?? null,
+            analysisResult: clinicalOutput as object,
+            imageUrls: [],
+          },
+        });
+
+        escalation = {
+          isComplex: true,
+          caseId: escalatedCase.id,
+          message:
+            "Your case has been flagged for specialist attention. You may request a specialist review using the case ID.",
+        };
+      } catch (err) {
+        console.error("[/api/v1/analyze] escalation save failed:", err);
+        escalation = {
+          isComplex: true,
+          message:
+            "Your case has been flagged for specialist attention. You may request a specialist review.",
+        };
+      }
+    } else {
+      escalation = { isComplex: false };
+    }
+
     const response: AnalyzeResponse = {
       status: "success",
       data: {
@@ -359,14 +471,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           urgencyColor: urgencyInfo.color,
           referralThreshold:
             primaryConditionFull?.referralThreshold ?? "routine",
-          immediateAction: urgencyInfo.action,
+          immediateAction: geminiImmediateAdvice ?? urgencyInfo.action,
           patientAdvice:
             primaryConditionFull?.patientAdvice ??
             "Please consult a healthcare provider for a proper evaluation.",
           redFlags:
+            geminiRedFlags ??
             primaryConditionFull?.redFlags ??
             (aiInsights ? [] : ["If symptoms worsen significantly, seek immediate medical care."]),
           specialists:
+            geminiSpecialists ??
             primaryConditionFull?.specialistNeeded ??
             aiInsights?.specialties ?? ["ENT"],
           investigations: primaryConditionFull
@@ -385,6 +499,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         },
         nearbyFacilities,
         locationNote,
+        ...(aiStatus !== undefined ? { aiStatus } : {}),
+        escalation,
       },
     };
 

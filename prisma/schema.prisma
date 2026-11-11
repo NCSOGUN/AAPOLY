@@ -86,6 +86,23 @@ model ApiKey {
   @@index([keyPrefix, active])
 }
 
+model EscalatedCase {
+  id                String   @id @default(cuid())
+  symptoms          String
+  affectedArea      String?
+  duration          String?
+  age               Int?
+  additionalContext String?
+  analysisResult    Json
+  imageUrls         String[]
+  status            String   @default("pending") // pending | reviewed | resolved
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
 model Condition {
   id                    String   @id  // slug e.g. "otitis-media-acute"
   name                  String

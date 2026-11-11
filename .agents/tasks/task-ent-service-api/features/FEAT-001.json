@@ -1,0 +1,33 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Add Gemini AI fallback to /api/v1/analyze and add Gemini helper functions to src/lib/ai-matching.ts. Covers: new Gemini helper functions (full analysis + image analysis), analyze route changes (fallback trigger, ai_full_analysis method, aiStatus error field, escalation detection + EscalatedCase DB save). Depends on: prisma schema having EscalatedCase model (do db:push first if schema not yet updated, or add model as part of this FEAT before the route changes). @google/generative-ai is already installed.",
+  "status": "completed",
+  "steps": [
+    "1. Add EscalatedCase model to prisma/schema.prisma (copy exact model block from task spec). Run `npm run db:push` from /Users/apple/Documents/ent-location-sys to apply schema and regenerate Prisma client.",
+    "2. Add imports at top of src/lib/ai-matching.ts: `import { GoogleGenerativeAI } from '@google/generative-ai';`. Do NOT modify any existing Groq code.",
+    "3. Add TypeScript interfaces after existing exports in src/lib/ai-matching.ts: `GeminiFullAnalysisResult` with fields `{ condition: string, urgencyScore: number, immediateAdvice: string, redFlags: string[], specialists: string[] }`. Add `GeminiImageAnalysisResult` with fields `{ findings: string[], possibleConditions: string[], urgencyScore: number, nextSteps: string[], specialistReviewNeeded: boolean, disclaimer: string }`.",
+    "4. Add error code type: `export type GeminiErrorCode = 'AI_QUOTA_EXCEEDED' | 'AI_TIMEOUT' | 'AI_UNAVAILABLE' | 'AI_ERROR';`. Add `GeminiAIError` class extending Error with `readonly code: GeminiErrorCode` and `readonly httpStatus: number`.",
+    "5. Implement `export async function callGeminiFullAnalysis(symptoms: string): Promise<GeminiFullAnalysisResult>` in src/lib/ai-matching.ts. Use `new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)`. Model: `gemini-1.5-flash-latest`. Prompt: `Given these symptoms: [symptoms]. Provide: 1) most likely ENT condition, 2) urgency level 1-10, 3) immediate patient advice, 4) red flags to watch for, 5) recommended specialists. Return JSON only.` Parse the response as JSON mapping to GeminiFullAnalysisResult. Map errors: HTTP 429 or quota message → AI_QUOTA_EXCEEDED (429), network timeout/ECONNRESET → AI_TIMEOUT (504), HTTP 401/403 or API key error → AI_UNAVAILABLE (503), anything else → AI_ERROR (502).",
+    "6. Implement `export async function callGeminiImageAnalysis(imageBase64: string, imageType: string, additionalContext?: string): Promise<GeminiImageAnalysisResult>` in src/lib/ai-matching.ts. Strip data URL prefix before passing to Gemini. Use `inlineData: { mimeType: 'image/jpeg', data: strippedBase64 }` as the image part. Use the exact prompt from the task spec. Same error mapping as callGeminiFullAnalysis.",
+    "7. In src/app/api/v1/analyze/route.ts: extend AnalysisMethod union type to include `'ai_full_analysis'`. Add `aiStatus?: { available: boolean; code?: string; message?: string }` to AnalyzeResponse.data shape. Add `escalation: { isComplex: boolean; caseId?: string; message?: string }` to AnalyzeResponse.data shape.",
+    "8. In src/app/api/v1/analyze/route.ts, after matchConditions() call: if `localMatches.length === 0 || localMatches[0].score < 30`, call `callGeminiFullAnalysis(clinicalText)`. On success: set analysisMethod = 'ai_full_analysis', merge AI fields into clinical output (use AI urgencyScore, immediateAdvice as immediateAction, redFlags, specialists). On GeminiAIError: set aiStatus = { available: false, code: error.code, message: error.message }, set analysisMethod = 'fallback'. On AI_QUOTA_EXCEEDED return HTTP 429 with error response. All other AI errors still return 200 with partial data and aiStatus populated.",
+    "9. In src/app/api/v1/analyze/route.ts, after building urgencyScore and analysisMethod: evaluate complexity criteria. ANY true triggers escalation: (a) urgencyScore >= 8; (b) localMatches.length >= 3 AND max(scores) - min(top3 scores) <= 15; (c) confidence === 'low' AND aiInsights === null; (d) symptoms.trim().length > 300; (e) analysisMethod === 'fallback'. If complex: call `prisma.escalatedCase.create({ data: { symptoms, affectedArea: affectedArea ?? null, duration: duration ?? null, age: age ?? null, additionalContext: additionalContext ?? null, analysisResult: response.data.analysis as object, imageUrls: [] } })`. Add `escalation: { isComplex: true, caseId: created.id, message: \"Your case has been flagged for specialist attention. You may request a specialist review using the case ID.\" }` to response. If not complex: add `escalation: { isComplex: false }` to response.",
+    "10. Add `import { callGeminiFullAnalysis, GeminiAIError } from '@/lib/ai-matching'` to src/app/api/v1/analyze/route.ts imports block. Also add `import { prisma } from '@/lib/prisma'`."
+  ],
+  "acceptance_criteria": [
+    "npm run build exits 0 with no TypeScript errors",
+    "npm run db:push succeeds and EscalatedCase table exists in the database",
+    "src/lib/ai-matching.ts exports callGeminiFullAnalysis and callGeminiImageAnalysis without modifying existing Groq exports",
+    "POST /api/v1/analyze with low-scoring symptoms returns analysis.method = 'ai_full_analysis' when Gemini is available",
+    "POST /api/v1/analyze response always includes escalation field (isComplex true or false)",
+    "When isComplex true, a record exists in EscalatedCase table and escalation.caseId is returned",
+    "AI_QUOTA_EXCEEDED error returns HTTP 429; other AI errors return 200 with aiStatus populated"
+  ],
+  "verification": [
+    "cd /Users/apple/Documents/ent-location-sys && npm run db:push",
+    "cd /Users/apple/Documents/ent-location-sys && npm run build"
+  ],
+  "blocked_reason": null,
+  "findings": "db:push requires .env.local DATABASE_URL (pooler URL) to be loaded — `npm run db:push` fails from plain shell without it but works with `npx prisma db push` after the .env.local is loaded via the npm script. GEMINI_API_KEY must be added to .env.local for Gemini calls to work at runtime. The next FEAT (image upload/analysis) can call callGeminiImageAnalysis directly from @/lib/ai-matching — the function is exported and ready. EscalatedCase model has an imageUrls String[] field ready for storing uploaded image URLs. Consider adding a GET /api/v1/escalated-cases/[id] admin endpoint in a future FEAT to let users check their escalation status."
+}
