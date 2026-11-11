@@ -85,3 +85,41 @@ model ApiKey {
 
   @@index([keyPrefix, active])
 }
+
+model Condition {
+  id                    String   @id  // slug e.g. "otitis-media-acute"
+  name                  String
+  commonName            String
+  category              String       // ear | nose | throat | head_neck | paediatric
+  subcategory           String
+  icdCode               String?
+  description           String
+  symptoms              Json         // { primary, secondary, rare }
+  affectedAreas         String[]
+  onsetPattern          String
+  typicalDuration       String
+  ageGroups             String[]
+  riskFactors           String[]
+  causes                Json         // { primary, contributing }
+  redFlags              String[]
+  diagnosticClues       String[]
+  differentialDiagnosis String[]     // array of condition IDs
+  investigations        Json         // { clinical, laboratory, imaging, specialist }
+  treatment             Json         // { selfCare, medication, procedural, surgical }
+  referralThreshold     String       // emergency | urgent_24h | urgent_week | routine | gp_only
+  referralThresholdReason String
+  specialistNeeded      String[]
+  urgencyScore          Int
+  urgencyRationale      String
+  patientAdvice         String
+  preventionTips        String[]
+  complications         String[]
+  relatedConditions     String[]     // array of condition IDs
+  keywords              String[]
+  nigeriaContext        Json         // { prevalence, localFactors, accessConsiderations }
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([category])
+  @@index([urgencyScore])
+}

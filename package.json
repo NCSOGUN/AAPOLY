@@ -10,6 +10,7 @@
     "postinstall": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed.ts",
+    "db:import-conditions": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/import-conditions.ts",
     "db:studio": "prisma studio"
   },
   "prisma": {
