@@ -1,0 +1,46 @@
+Best stack for the Hospital/Specialist Desktop App: Tauri 2 + React + TypeScript + Tailwind + shadcn/uiThis is the strongest choice given your constraints (existing API, offline-first with SQLite, doctor/hospital workflows, printable reports, QR verification, good UI/UX, and multi-image splash screens).Why this stack wins
+
+RequirementWhy Tauri + React winsFasterMuch smaller binary, lower RAM, faster startup than Electron. Native performance feel.Better UI/UXReact + Tailwind + shadcn/ui gives modern, clean, highly polished interfaces that feel like premium medical software.Offline-first + SQLiteFirst-class support (tauri-plugin-sql). Matches the architecture already described in your README.Splash screens with multiple imagesExtremely easy (custom window + image sequence/carousel).Desktop featuresPrinting, camera (QR), file system, system tray, auto-updates all well supported.Existing APIClean REST integration. Your hu_ token + X-API-Key pattern works perfectly.Hospital contextFeels professional and lightweight — important for machines in clinics/hospitals.Recommended Tech Stack (Final)Core
+Desktop shell: Tauri 2
+Frontend: React 19 + TypeScript
+Styling: Tailwind CSS + shadcn/ui (best modern component library right now)
+Routing: React Router v7
+Local database: SQLite via tauri-plugin-sql (or better-sqlite3 if you prefer)
+API layer: TanStack Query (React Query) + Axios/fetch
+State: Zustand (lightweight) + TanStack Query for server state
+Forms: React Hook Form + Zod
+QR Code: html5-qrcode or @zxing/browser
+Printing: Tauri print APIs + browser print for reports
+Splash: Custom Tauri splash window + image sequence/carousel
+Nice additions
+date-fns or dayjs for calendars
+recharts or tremor for simple analytics later
+react-hot-toast or sonner for notifications
+Electron is the alternative only if you need a very large existing plugin ecosystem. For your use case Tauri is superior.
+Why not the other common options?
+Electron + React: Still good, but heavier, slower startup, larger install size. Only choose this if your team already knows Electron well.
+Flutter Desktop: Great UI, but steeper learning curve for web/API teams and less natural for your existing web-oriented API.
+Pure web (Next.js / React) opened in browser: Loses real offline SQLite, proper desktop feel, system integration, and reliable QR/camera/print experience.
+.NET / WPF / MAUI: Possible, but weaker modern UI ecosystem and slower development velocity for this type of app.
+Splash Screen with Multiple Images (Easy with Tauri)You can create a dedicated splash window that:
+Shows on app launch
+Cycles through 3–6 images (branding, feature highlights, “Loading patient data…”, etc.)
+Shows a progress bar or status messages while authenticating / loading local SQLite
+Closes automatically when the main window is ready
+This is straightforward in Tauri (custom splash window + timed image sequence or a simple carousel).High-level Architecture FittextTauri App (React)
+├── Splash Window (multi-image sequence)
+├── Auth Layer (hospital-auth → store hu_ token + facility in SQLite)
+├── Offline SQLite (auth_session, referrals, patient_visits, sync_queue, cached_facilities)
+├── Online Sync (when connection available)
+├── API Client (uses hu_ token as X-API-Key)
+│   ├── /nearby-for-report
+│   ├── /reports/{trackingId}
+│   ├── escalated-cases
+│   └── facilities
+└── Main Windows
+    ├── Dashboard (appointments, priority cases)
+    ├── Patient Record + Analysis Review
+    ├── Referral Creator (nearby-for-report)
+    ├── Availability Calendar
+    └── QR Verification + PrintThis matches the offline-first design already outlined in your README almost perfectly.Recommendation SummaryGo with:
+Tauri 2 + React + TypeScript + Tailwind CSS + shadcn/ui
