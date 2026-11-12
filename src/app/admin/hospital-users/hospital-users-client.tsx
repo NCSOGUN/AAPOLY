@@ -453,173 +453,182 @@ export function HospitalUsersClient({ users: initialUsers, facilities }: Props) 
             <p className="text-xs text-[#5f6368] mt-1">Create one to give a hospital or doctor access to the desktop app.</p>
           </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-5 py-3 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Name</th>
-                <th className="px-5 py-3 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Email</th>
-                <th className="px-5 py-3 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Role</th>
-                <th className="px-5 py-3 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide hidden md:table-cell">Specialization</th>
-                <th className="px-5 py-3 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide hidden lg:table-cell">Facility</th>
-                <th className="px-5 py-3 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide hidden lg:table-cell">Last login</th>
-                <th className="px-5 py-3 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Status</th>
-                <th className="px-5 py-3 text-right text-xs font-medium text-[#5f6368] uppercase tracking-wide">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {users.map((u) => (
-                <Fragment key={u.id}>
-                  <tr className="hover:bg-gray-50">
-                    <td className="px-5 py-3 font-medium text-[#202124]">{u.name}</td>
-                    <td className="px-5 py-3 text-[#5f6368]">{u.email}</td>
-                    <td className="px-5 py-3 text-[#5f6368] capitalize">{u.role}</td>
-                    <td className="px-5 py-3 text-[#5f6368] hidden md:table-cell">{u.specialization ?? "—"}</td>
-                    <td className="px-5 py-3 text-[#5f6368] hidden lg:table-cell">{u.facility?.name ?? "—"}</td>
-                    <td className="px-5 py-3 text-[#5f6368] text-xs hidden lg:table-cell">{timeAgo(u.lastLoginAt)}</td>
-                    <td className="px-5 py-3">
-                      {u.active ? (
-                        <span className="inline-flex items-center gap-1 text-xs text-green-700 border border-green-200 bg-green-50 px-2 py-0.5">
-                          <ShieldCheck className="h-3 w-3" /> Active
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-xs text-gray-500 border border-gray-200 bg-gray-100 px-2 py-0.5">
-                          <ShieldOff className="h-3 w-3" /> Disabled
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-5 py-3">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => (editingId === u.id ? setEditingId(null) : startEdit(u))}
-                          className="inline-flex items-center gap-1 border border-gray-200 bg-white px-2.5 py-1 text-xs text-[#5f6368] hover:bg-gray-50 transition-colors"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                          {editingId === u.id ? "Close" : "Edit"}
-                        </button>
-                        <button
-                          onClick={() => handleToggle(u.id, u.active)}
-                          disabled={togglingId === u.id}
-                          className="border border-gray-200 bg-white px-2.5 py-1 text-xs text-[#5f6368] hover:bg-gray-50 transition-colors disabled:opacity-50"
-                        >
-                          {togglingId === u.id ? "…" : u.active ? "Disable" : "Enable"}
-                        </button>
-                        <button
-                          onClick={() => handleResetToken(u.id, u.name)}
-                          disabled={resettingId === u.id}
-                          className="inline-flex items-center gap-1 border border-gray-200 bg-white px-2.5 py-1 text-xs text-[#5f6368] hover:bg-gray-50 transition-colors disabled:opacity-50"
-                        >
-                          <RotateCcw className="h-3.5 w-3.5" />
-                          {resettingId === u.id ? "…" : "Reset token"}
-                        </button>
-                        <button
-                          onClick={() => handleDelete(u.id, u.name)}
-                          disabled={deletingId === u.id}
-                          className="border border-gray-200 bg-white px-2.5 py-1 text-xs text-[#5f6368] hover:border-red-200 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
-                        >
-                          {deletingId === u.id ? "…" : <Trash2 className="h-3.5 w-3.5" />}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  {editingId === u.id && (
-                    <tr>
-                      <td colSpan={8} className="px-5 py-4 bg-gray-50">
-                        <div className="border border-gray-200 bg-white p-4 space-y-4">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-[#202124]">Edit {u.name}</span>
-                            <button
-                              onClick={() => setEditingId(null)}
-                              className="text-[#5f6368] hover:text-[#202124]"
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
-                          </div>
-                          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                            <div className="space-y-1.5">
-                              <Label htmlFor={`edit-name-${u.id}`}>Full name</Label>
-                              <Input
-                                id={`edit-name-${u.id}`}
-                                value={editForm.name}
-                                onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
-                              />
-                            </div>
-                            <div className="space-y-1.5">
-                              <Label htmlFor={`edit-role-${u.id}`}>Role</Label>
-                              <select
-                                id={`edit-role-${u.id}`}
-                                className={selectClass}
-                                value={editForm.role}
-                                onChange={(e) => setEditForm((p) => ({ ...p, role: e.target.value }))}
-                              >
-                                {ROLES.map((r) => (
-                                  <option key={r} value={r} className="capitalize">{r}</option>
-                                ))}
-                              </select>
-                            </div>
-                            <div className="space-y-1.5">
-                              <Label htmlFor={`edit-spec-${u.id}`}>Specialization</Label>
-                              <Input
-                                id={`edit-spec-${u.id}`}
-                                value={editForm.specialization}
-                                onChange={(e) => setEditForm((p) => ({ ...p, specialization: e.target.value }))}
-                                placeholder="e.g. Otologist"
-                              />
-                            </div>
-                            <div className="space-y-1.5">
-                              <Label htmlFor={`edit-phone-${u.id}`}>Phone</Label>
-                              <Input
-                                id={`edit-phone-${u.id}`}
-                                value={editForm.phone}
-                                onChange={(e) => setEditForm((p) => ({ ...p, phone: e.target.value }))}
-                                placeholder="+234 801 234 5678"
-                              />
-                            </div>
-                            <div className="space-y-1.5">
-                              <Label htmlFor={`edit-license-${u.id}`}>License number</Label>
-                              <Input
-                                id={`edit-license-${u.id}`}
-                                value={editForm.licenseNumber}
-                                onChange={(e) => setEditForm((p) => ({ ...p, licenseNumber: e.target.value }))}
-                              />
-                            </div>
-                            <div className="space-y-1.5">
-                              <Label htmlFor={`edit-facility-${u.id}`}>Facility</Label>
-                              <select
-                                id={`edit-facility-${u.id}`}
-                                className={selectClass}
-                                value={editForm.facilityId}
-                                onChange={(e) => setEditForm((p) => ({ ...p, facilityId: e.target.value }))}
-                              >
-                                <option value="">No facility</option>
-                                {facilities.map((f) => (
-                                  <option key={f.id} value={f.id}>{f.name}</option>
-                                ))}
-                              </select>
-                            </div>
-                          </div>
-                          <div className="flex gap-2 pt-1">
-                            <button
-                              onClick={() => handleSaveEdit(u.id)}
-                              disabled={editLoading || !editForm.name.trim()}
-                              className="bg-[#1a73e8] px-4 py-2 text-sm text-white hover:bg-[#1557b0] transition-colors disabled:opacity-50"
-                            >
-                              {editLoading ? "Saving…" : "Save changes"}
-                            </button>
-                            <button
-                              onClick={() => setEditingId(null)}
-                              className="border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                            >
-                              Cancel
-                            </button>
-                          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[640px]">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Name</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Email</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Role</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide hidden md:table-cell">Facility</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide hidden lg:table-cell">Last login</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-[#5f6368] uppercase tracking-wide">Status</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-[#5f6368] uppercase tracking-wide">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {users.map((u) => (
+                  <Fragment key={u.id}>
+                    <tr className="hover:bg-gray-50">
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-[#202124] text-sm">{u.name}</div>
+                        {u.specialization && (
+                          <div className="text-xs text-[#5f6368]">{u.specialization}</div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-[#5f6368] text-xs">{u.email}</td>
+                      <td className="px-4 py-3 text-[#5f6368] text-xs capitalize">{u.role}</td>
+                      <td className="px-4 py-3 text-[#5f6368] text-xs hidden md:table-cell">
+                        <span className="line-clamp-2">{u.facility?.name ?? "—"}</span>
+                      </td>
+                      <td className="px-4 py-3 text-[#5f6368] text-xs hidden lg:table-cell">{timeAgo(u.lastLoginAt)}</td>
+                      <td className="px-4 py-3">
+                        {u.active ? (
+                          <span className="inline-flex items-center gap-1 text-xs text-green-700 border border-green-200 bg-green-50 px-2 py-0.5 whitespace-nowrap">
+                            <ShieldCheck className="h-3 w-3" /> Active
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-xs text-gray-500 border border-gray-200 bg-gray-100 px-2 py-0.5 whitespace-nowrap">
+                            <ShieldOff className="h-3 w-3" /> Disabled
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                          <button
+                            onClick={() => (editingId === u.id ? setEditingId(null) : startEdit(u))}
+                            className="inline-flex items-center gap-1 border border-gray-200 bg-white px-2 py-1 text-xs text-[#5f6368] hover:bg-gray-50 transition-colors whitespace-nowrap"
+                          >
+                            <Pencil className="h-3 w-3" />
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleToggle(u.id, u.active)}
+                            disabled={togglingId === u.id}
+                            className="border border-gray-200 bg-white px-2 py-1 text-xs text-[#5f6368] hover:bg-gray-50 transition-colors disabled:opacity-50 whitespace-nowrap"
+                          >
+                            {togglingId === u.id ? "…" : u.active ? "Disable" : "Enable"}
+                          </button>
+                          <button
+                            onClick={() => handleResetToken(u.id, u.name)}
+                            disabled={resettingId === u.id}
+                            className="inline-flex items-center gap-1 border border-gray-200 bg-white px-2 py-1 text-xs text-[#5f6368] hover:bg-gray-50 transition-colors disabled:opacity-50 whitespace-nowrap"
+                            title="Reset access token"
+                          >
+                            <RotateCcw className="h-3 w-3" />
+                            {resettingId === u.id ? "…" : "Token"}
+                          </button>
+                          <button
+                            onClick={() => handleDelete(u.id, u.name)}
+                            disabled={deletingId === u.id}
+                            className="border border-gray-200 bg-white px-2 py-1 text-xs text-[#5f6368] hover:border-red-200 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+                            title="Delete user"
+                          >
+                            {deletingId === u.id ? "…" : <Trash2 className="h-3.5 w-3.5" />}
+                          </button>
                         </div>
                       </td>
                     </tr>
-                  )}
-                </Fragment>
-              ))}
-            </tbody>
-          </table>
+                    {editingId === u.id && (
+                      <tr>
+                        <td colSpan={7} className="px-4 py-4 bg-gray-50">
+                          <div className="border border-gray-200 bg-white p-4 space-y-4">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium text-[#202124]">Edit {u.name}</span>
+                              <button
+                                onClick={() => setEditingId(null)}
+                                className="text-[#5f6368] hover:text-[#202124]"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                              <div className="space-y-1.5">
+                                <Label htmlFor={`edit-name-${u.id}`}>Full name</Label>
+                                <Input
+                                  id={`edit-name-${u.id}`}
+                                  value={editForm.name}
+                                  onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
+                                />
+                              </div>
+                              <div className="space-y-1.5">
+                                <Label htmlFor={`edit-role-${u.id}`}>Role</Label>
+                                <select
+                                  id={`edit-role-${u.id}`}
+                                  className={selectClass}
+                                  value={editForm.role}
+                                  onChange={(e) => setEditForm((p) => ({ ...p, role: e.target.value }))}
+                                >
+                                  {ROLES.map((r) => (
+                                    <option key={r} value={r} className="capitalize">{r}</option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div className="space-y-1.5">
+                                <Label htmlFor={`edit-spec-${u.id}`}>Specialization</Label>
+                                <Input
+                                  id={`edit-spec-${u.id}`}
+                                  value={editForm.specialization}
+                                  onChange={(e) => setEditForm((p) => ({ ...p, specialization: e.target.value }))}
+                                  placeholder="e.g. Otologist"
+                                />
+                              </div>
+                              <div className="space-y-1.5">
+                                <Label htmlFor={`edit-phone-${u.id}`}>Phone</Label>
+                                <Input
+                                  id={`edit-phone-${u.id}`}
+                                  value={editForm.phone}
+                                  onChange={(e) => setEditForm((p) => ({ ...p, phone: e.target.value }))}
+                                  placeholder="+234 801 234 5678"
+                                />
+                              </div>
+                              <div className="space-y-1.5">
+                                <Label htmlFor={`edit-license-${u.id}`}>License number</Label>
+                                <Input
+                                  id={`edit-license-${u.id}`}
+                                  value={editForm.licenseNumber}
+                                  onChange={(e) => setEditForm((p) => ({ ...p, licenseNumber: e.target.value }))}
+                                />
+                              </div>
+                              <div className="space-y-1.5">
+                                <Label htmlFor={`edit-facility-${u.id}`}>Facility</Label>
+                                <select
+                                  id={`edit-facility-${u.id}`}
+                                  className={selectClass}
+                                  value={editForm.facilityId}
+                                  onChange={(e) => setEditForm((p) => ({ ...p, facilityId: e.target.value }))}
+                                >
+                                  <option value="">No facility</option>
+                                  {facilities.map((f) => (
+                                    <option key={f.id} value={f.id}>{f.name}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+                            <div className="flex gap-2 pt-1">
+                              <button
+                                onClick={() => handleSaveEdit(u.id)}
+                                disabled={editLoading || !editForm.name.trim()}
+                                className="bg-[#1a73e8] px-4 py-2 text-sm text-white hover:bg-[#1557b0] transition-colors disabled:opacity-50"
+                              >
+                                {editLoading ? "Saving…" : "Save changes"}
+                              </button>
+                              <button
+                                onClick={() => setEditingId(null)}
+                                className="border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
