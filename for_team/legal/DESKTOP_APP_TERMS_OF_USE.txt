@@ -1,0 +1,404 @@
+================================================================================
+ENT-CARE DESKTOP APPLICATION
+TERMS OF USE — AUTHORISED HOSPITAL AND SPECIALIST STAFF
+================================================================================
+
+Organisation:     ENT-Care AI Platform
+Developed under:  Abraham Adesanya Polytechnic (AAPOLY)
+Jurisdiction:     Federal Republic of Nigeria
+Governing Law:    Nigeria Data Protection Act 2023 (NDPA);
+                  Nigeria Data Protection Regulation 2019 (NDPR);
+                  Medical and Dental Practitioners Act (Cap. M8) LFN 2004
+Effective Date:   November 2026
+Version:          1.0
+Contact:          support@entcare.ai
+Privacy Contact:  privacy@entcare.ai
+
+--------------------------------------------------------------------------------
+IMPORTANT NOTICE
+--------------------------------------------------------------------------------
+
+This application is restricted to authorised hospital staff, doctors, and
+specialist personnel whose accounts have been issued by their institution
+through the ENT-Care platform.
+
+By activating your account, logging in, or using any feature of this
+application, you confirm that you have read, understood, and agreed to be
+bound by these Terms of Use in full.
+
+If you do not agree with any part of these terms, do not proceed. Contact
+your hospital administrator or ENT-Care support to have your account
+deactivated.
+
+--------------------------------------------------------------------------------
+1. DEFINITIONS
+--------------------------------------------------------------------------------
+
+"The Platform"     — The ENT-Care AI system, including this desktop
+                     application and the Location Intelligence Service it
+                     connects to.
+
+"The Service"      — All features provided through this application,
+                     including symptom analysis, diagnosis support, referral
+                     finding, escalated case management, and report access.
+
+"Authorised User"  — A doctor, specialist, nurse, or hospital administrator
+                     whose account has been created and issued by their
+                     institution through the ENT-Care admin panel.
+
+"Patient Data"     — Any information entered into the application that
+                     relates to an identifiable or potentially identifiable
+                     patient, including symptoms, age, images, and
+                     diagnosis reports.
+
+"Analysis Result"  — Any output produced by the platform's AI or database
+                     matching system in response to clinical input.
+
+"Token"            — The long-lived access credential issued to your account
+                     for authenticating with the ENT-Care service.
+
+--------------------------------------------------------------------------------
+2. AUTHORISED ACCESS
+--------------------------------------------------------------------------------
+
+2.1  Access to this application is strictly limited to personnel with a
+     valid account issued by their hospital or care organisation through
+     the ENT-Care platform.
+
+2.2  You must not share your login credentials, password, or access token
+     with any other person under any circumstances.
+
+2.3  You are responsible for all actions taken under your account. If you
+     believe your credentials have been compromised, you must notify your
+     hospital administrator immediately so that your token can be reset.
+
+2.4  You must lock the application or log out whenever you step away from
+     the device, particularly in clinical environments where other persons
+     may have physical access to the screen.
+
+2.5  Accounts are issued per individual. Using another person's account,
+     or allowing another person to use yours, constitutes a breach of
+     these terms and may result in immediate account suspension.
+
+2.6  Your access token is a long-lived credential. The first time the
+     application connects online, it authenticates and stores this token
+     locally. You remain responsible for the security of the device on
+     which the token is stored.
+
+--------------------------------------------------------------------------------
+3. CLINICAL RESPONSIBILITY
+--------------------------------------------------------------------------------
+
+3.1  DECISION SUPPORT ONLY. All analysis results, suggested diagnoses,
+     urgency scores, red flags, and clinical recommendations produced by
+     this platform are decision support tools only. They are NOT confirmed
+     clinical diagnoses.
+
+3.2  A qualified and registered medical professional must independently
+     assess every patient. The platform's output must not be relied upon
+     as the sole basis for any clinical decision, prescription, referral,
+     or treatment.
+
+3.3  You remain solely and fully responsible for all clinical decisions
+     made in relation to patients you assess, regardless of what the
+     platform suggests.
+
+3.4  The AI and database matching system may produce incorrect, incomplete,
+     or misleading outputs. You must apply your own professional judgement
+     to evaluate every result.
+
+3.5  For emergency presentations — including but not limited to sudden
+     hearing loss, airway compromise, severe bleeding, neck swelling
+     affecting breathing, or facial nerve palsy — you must follow your
+     institution's emergency protocols. Do not delay emergency care in
+     order to run a platform analysis.
+
+3.6  All automated findings displayed in the application must be clearly
+     communicated to patients as computer-assisted assessments, not as
+     confirmed diagnoses, before any treatment decision is made.
+
+--------------------------------------------------------------------------------
+4. PATIENT CONSENT AND CONFIDENTIALITY
+--------------------------------------------------------------------------------
+
+4.1  You must obtain appropriate informed consent from each patient before
+     entering their information into this application. This includes
+     consent for:
+       (a) their symptoms and clinical history to be processed by the
+           platform's AI and database systems;
+       (b) any clinical images (ear canal, throat, nasal cavity, etc.)
+           to be uploaded and analysed;
+       (c) their data to be transmitted to the ENT-Care server for
+           analysis purposes.
+
+4.2  You must inform patients that:
+       (a) uploaded clinical images may be retained by the platform for
+           diagnostic quality improvement purposes;
+       (b) a tracking ID is generated for each analysis report and may
+           be used to retrieve that report in future;
+       (c) data is processed under Nigerian data protection law.
+
+4.3  You must access patient information only when it is necessary for
+     the clinical care of that specific patient. Accessing records out
+     of curiosity, for research without ethical approval, or for any
+     purpose unrelated to direct patient care is prohibited.
+
+4.4  You must follow your organisation's policies on data retention,
+     incident reporting, and information governance at all times.
+
+4.5  You must not photograph, copy, or export patient data from the
+     application for any purpose not authorised by your institution
+     and by applicable law.
+
+--------------------------------------------------------------------------------
+5. IMAGE UPLOAD AND CLINICAL PHOTOGRAPHY
+--------------------------------------------------------------------------------
+
+5.1  Clinical images submitted through this application (otoscope images,
+     throat photographs, nasal images) will be transmitted to the ENT-Care
+     server and stored securely in encrypted cloud storage for analysis
+     and diagnostic quality review.
+
+5.2  You must obtain explicit patient consent before capturing and
+     uploading any clinical photograph. This consent must be documented
+     in accordance with your institution's procedures.
+
+5.3  Images must be of the clinical area relevant to the patient's
+     presenting complaint only. You must not submit images that identify
+     the patient in any way beyond clinical necessity.
+
+5.4  The platform provides AI-assisted analysis of clinical images.
+     This analysis is preliminary and must be validated by clinical
+     examination. The disclaimer provided with every image analysis
+     result must be communicated to the patient.
+
+5.5  Patients may request deletion of their submitted images by
+     contacting support@entcare.ai.
+
+--------------------------------------------------------------------------------
+6. LOCAL DATA STORAGE AND CONNECTIVITY
+--------------------------------------------------------------------------------
+
+6.1  This application stores certain data locally on the device on which
+     it is installed. This includes your authentication token, your
+     facility information, and any patient intake details or reports
+     created during offline sessions.
+
+6.2  Locally stored data is encrypted. You must ensure the device
+     running this application is protected by a device-level password or
+     PIN at all times.
+
+6.3  Diagnosis and analysis features require an active internet connection.
+     The application will indicate clearly when these features are
+     unavailable due to lack of connectivity.
+
+6.4  When connectivity is restored, the application may synchronise
+     queued data with the ENT-Care server. You are responsible for
+     ensuring that any data queued during offline use is accurate and
+     complete before synchronisation occurs.
+
+6.5  You must not install this application on personal devices that do
+     not meet your institution's security and device management policies.
+
+--------------------------------------------------------------------------------
+7. ESCALATED CASES AND SPECIALIST REVIEW
+--------------------------------------------------------------------------------
+
+7.1  The platform automatically identifies certain analyses as complex
+     cases and flags them for specialist review. These cases are stored
+     on the ENT-Care server and may be reviewed by qualified specialist
+     personnel connected to the platform.
+
+7.2  Patient consent must be obtained before a case is escalated for
+     specialist review. The consent mechanism provided within the
+     application must be used for this purpose.
+
+7.3  Responses provided by specialists through the escalation system are
+     advisory in nature. The treating clinician retains full responsibility
+     for the final clinical decision.
+
+7.4  Escalated cases are retained on the server in accordance with the
+     data retention policy set out in Section 10 of these terms.
+
+--------------------------------------------------------------------------------
+8. REFERRAL INFORMATION
+--------------------------------------------------------------------------------
+
+8.1  Facility information displayed in this application, including
+     hospital names, locations, distances, travel times, specialties,
+     and accreditation status, is sourced from the ENT-Care Location
+     Intelligence Service and is updated by the platform administrator.
+
+8.2  You must independently verify the availability and suitability of
+     any referral facility before directing a patient to it. The platform
+     does not guarantee the accuracy, currency, or completeness of
+     facility information.
+
+8.3  A referral document generated through this application is a
+     recommended referral only. It does not constitute a confirmed
+     appointment or guarantee of admission at the receiving facility.
+
+--------------------------------------------------------------------------------
+9. PROHIBITED USE
+--------------------------------------------------------------------------------
+
+You must not use this application to:
+
+(a)  Enter false, misleading, or fabricated patient information.
+(b)  Process data for any purpose other than direct patient care at
+     your institution.
+(c)  Attempt to circumvent or test security controls.
+(d)  Access the accounts or data of other users.
+(e)  Automate requests to the ENT-Care service beyond the intended use
+     of the application.
+(f)  Distribute, reverse engineer, decompile, or modify the application
+     or its access credentials.
+(g)  Use the platform for commercial gain outside of your authorised
+     institutional role.
+(h)  Upload content that is offensive, unrelated to clinical care, or
+     in breach of applicable law.
+
+--------------------------------------------------------------------------------
+10. DATA PROTECTION AND RETENTION
+--------------------------------------------------------------------------------
+
+10.1  The ENT-Care platform processes personal data in accordance with
+      the Nigeria Data Protection Act 2023 (NDPA) and the Nigeria Data
+      Protection Regulation 2019 (NDPR).
+
+10.2  Patient data submitted through this application is processed for
+      the purpose of clinical decision support and is not shared with
+      third parties except as required by law or as necessary to provide
+      the service (e.g. cloud storage providers operating under
+      appropriate data processing agreements).
+
+10.3  Diagnosis reports and analysis results are retained on the
+      ENT-Care server for a default period of 24 months from the date
+      of creation. Reports may be retained longer where required by
+      applicable medical records legislation.
+
+10.4  Clinical images are retained for a default period of 12 months.
+      Patients may request earlier deletion by contacting
+      privacy@entcare.ai.
+
+10.5  Your account activity logs, including login events and API usage,
+      are retained for 12 months for security and audit purposes.
+
+10.6  Locally cached data on your device is not managed by ENT-Care.
+      Your institution is responsible for the retention and deletion
+      of data stored on devices it controls.
+
+10.7  Patients have the right to request access to, correction of, or
+      deletion of their personal data held by the platform. Such
+      requests should be directed to privacy@entcare.ai.
+
+10.8  In the event of a data breach affecting patient data, ENT-Care
+      will notify affected parties and the Nigeria Data Protection
+      Commission (NDPC) in accordance with applicable law.
+
+--------------------------------------------------------------------------------
+11. LIMITATION OF LIABILITY
+--------------------------------------------------------------------------------
+
+11.1  To the fullest extent permitted by Nigerian law, ENT-Care, Abraham
+      Adesanya Polytechnic, and the developers of this platform accept no
+      liability for:
+        (a) clinical decisions made on the basis of analysis results;
+        (b) harm to patients arising from reliance on automated outputs;
+        (c) loss of data resulting from device failure or connectivity
+            issues;
+        (d) inaccuracies in facility, location, or referral information.
+
+11.2  The platform is provided as a clinical support tool. It does not
+      replace clinical training, professional registration requirements,
+      or the duty of care owed by a registered medical practitioner to
+      their patient.
+
+11.3  Nothing in these terms limits liability for death or personal
+      injury caused by negligence, or for fraud or fraudulent
+      misrepresentation.
+
+--------------------------------------------------------------------------------
+12. SUSPENSION AND TERMINATION
+--------------------------------------------------------------------------------
+
+12.1  Your access may be suspended or terminated immediately if:
+        (a) you breach any provision of these terms;
+        (b) your employing institution requests deactivation of your
+            account;
+        (c) the platform administrator determines that your account has
+            been compromised or misused.
+
+12.2  Upon termination, your access token will be invalidated and you
+      will no longer be able to log in to the application.
+
+12.3  Termination does not affect obligations that by their nature should
+      survive, including confidentiality obligations and data protection
+      responsibilities.
+
+--------------------------------------------------------------------------------
+13. CHANGES TO THESE TERMS
+--------------------------------------------------------------------------------
+
+13.1  ENT-Care reserves the right to update these terms at any time.
+      Continued use of the application after updated terms are displayed
+      constitutes acceptance of the revised terms.
+
+13.2  Significant changes will be communicated through the application
+      at login and, where an email address is registered, by email.
+
+13.3  If you do not accept updated terms, you must stop using the
+      application and notify your institution.
+
+--------------------------------------------------------------------------------
+14. GOVERNING LAW AND DISPUTES
+--------------------------------------------------------------------------------
+
+14.1  These terms are governed by the laws of the Federal Republic of
+      Nigeria.
+
+14.2  Any dispute arising from or in connection with these terms shall
+      be subject to the exclusive jurisdiction of the courts of Nigeria.
+
+14.3  Before initiating formal proceedings, parties agree to attempt
+      resolution through good-faith discussion within 30 days of a
+      written notice of dispute.
+
+--------------------------------------------------------------------------------
+15. CONTACT INFORMATION
+--------------------------------------------------------------------------------
+
+For general support:
+  support@entcare.ai
+
+For privacy and data protection matters:
+  privacy@entcare.ai
+
+For account management and access issues:
+  Contact your hospital or institutional administrator, or write to
+  support@entcare.ai
+
+Developed under:
+  Abraham Adesanya Polytechnic (AAPOLY)
+  ENT-Care AI Platform Project
+
+--------------------------------------------------------------------------------
+AGREEMENT
+--------------------------------------------------------------------------------
+
+By proceeding past the Terms of Use screen in this application, you confirm
+that you:
+
+  1. Have read and understood these Terms of Use in full.
+  2. Are an authorised user with an account issued by your institution.
+  3. Agree to be bound by these terms.
+  4. Understand that analysis results are decision support only and that
+     you retain full clinical responsibility for patient care decisions.
+  5. Will obtain appropriate patient consent before entering or submitting
+     patient data.
+
+--------------------------------------------------------------------------------
+Document version: 1.0  |  Effective: November 2026
+Review due: November 2027
+Maintained by: ENT-Care Platform — privacy@aapoly.edu.ng
+================================================================================
