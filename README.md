@@ -50,12 +50,9 @@ administrator if the operating system reports that a package cannot be
 verified; do not advise staff to bypass platform security warnings.
 
 On first launch, ENT-Care presents a welcome and setup guide, followed by an
-operational terms review screen. The current terms are explicitly marked as an
-**unapproved internal review draft**. They are for evaluation only and must be
-replaced with wording approved by AAPOLY and the responsible privacy, clinical
-and legal teams before distributing the app to clients. Acknowledging the draft
-is stored on the local device and is not acceptance of final organisational
-terms.
+operational Terms of Use screen. Users must review and accept the current terms
+before continuing. The accepted terms version is recorded on the local device;
+users are asked to review and accept again when the terms version changes.
 
 After setup, staff sign in with their hospital account while online and verify
 that the displayed facility is correct. The app can reopen the encrypted local
@@ -64,13 +61,14 @@ facility search require connectivity.
 
 ## Local API configuration
 
-Copy `.env.example` to `.env` and set `VITE_ENT_API_KEY` to the development API
-key supplied to your team. The API base URL defaults to
-`https://ent-server.hostl.cloud/api/v1`; set `VITE_API_BASE_URL` only when your
-team has a different approved environment.
+The API base URL defaults to `https://ent-server.hostl.cloud/api/v1`. To use a
+different approved environment, copy `.env.example` to `.env` and set
+`VITE_API_BASE_URL`.
 
-The Vite `VITE_` variables are included in frontend code. Use this API key only
-for development; do not put production secrets in this configuration.
+The desktop app does not bundle a shared API key. Hospital credentials are
+sent to the sign-in endpoint, and the returned user token is used for
+subsequent requests. Never put a private API key in the app database or a
+distributed build.
 
 ## Implemented workflows
 
@@ -111,8 +109,14 @@ for development; do not put production secrets in this configuration.
   so this app does not claim that a draft has been sent or received.
 - Appointment booking is not implemented because no appointment endpoint or
   contract is documented for this app.
-- The service’s live authentication and endpoint responses require approved
-  team credentials to verify end-to-end.
+- The desktop client follows the integration guide's hospital-token flow:
+  sign in without a shared key, then use the returned `hu_` token. However, the
+  live API documentation currently says every endpoint requires a consumer API
+  key that must remain server-side. The backend must reconcile these contracts
+  and permit the documented hospital sign-in/token flow before installers can
+  sign in.
+- Live authentication and endpoint responses still require approved team
+  credentials to verify end-to-end.
 - Clinical analysis requires an internet connection. Results are decision
   support only and do not replace clinician judgement.
 

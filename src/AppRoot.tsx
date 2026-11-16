@@ -20,7 +20,7 @@ import {
 
 type ActiveSession = StoredHospitalSession;
 const DAILY_SESSION_MS = 24 * 60 * 60 * 1000;
-const ONBOARDING_ACK_KEY = "ent-care:onboarding:review-draft-v1";
+const ONBOARDING_ACK_KEY = "ent-care:onboarding:terms-approved-2026-11-v1";
 
 export default function AppRoot() {
   const [session, setSession] = useState<ActiveSession | null>(null);

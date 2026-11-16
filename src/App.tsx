@@ -680,7 +680,7 @@ function App({
               <span>Staff member / clinician <i /></span>
             </div>
             <footer className="print-form-footer">
-              <span>THIS FORM IS NOT FOR SALE !</span>
+              <span>Confidential patient information · Handle according to facility policy</span>
               <small>{session.user.facility.name} · Form ID: {printMetadata?.formId ?? "Assigned when printed"} · Printed: {printMetadata?.printedAt ?? "—"}</small>
             </footer>
           </div>
@@ -797,6 +797,10 @@ function App({
                       <div className="form-divider" />
 
                       <div className="form-grid">
+                        <div className="form-group-heading full-width">
+                          <h3>Personal information</h3>
+                          <span>Fields marked with * are required.</span>
+                        </div>
                         <label className="field">
                           <FormLabel required>First name</FormLabel>
                           <Input className={inputClass} placeholder="e.g. Adeola" autoComplete="given-name" {...register("firstName")} />
@@ -823,6 +827,9 @@ function App({
                           </select>
                           <FieldError>{errors.sex?.message}</FieldError>
                         </label>
+                        <div className="form-group-heading full-width">
+                          <h3>Contact information</h3>
+                        </div>
                         <label className="field">
                           <FormLabel required>Phone number</FormLabel>
                           <Input className={inputClass} type="tel" placeholder="+234 801 234 5678" autoComplete="tel" {...register("phone")} />
@@ -871,6 +878,10 @@ function App({
                       <div className="form-divider" />
 
                       <div className="form-grid">
+                        <div className="form-group-heading full-width">
+                          <h3>Presenting concern</h3>
+                          <span>Record what the patient reports; do not infer a diagnosis.</span>
+                        </div>
                         <label className="field full-width">
                           <FormLabel required>Main concern</FormLabel>
                           <Textarea className={cn("field-textarea", "complaint-textarea")} placeholder="Describe the main problem in the patient's own words…" {...register("complaint")} />
@@ -955,6 +966,9 @@ function App({
                           </div>
                         )}
 
+                        <div className="form-group-heading full-width">
+                          <h3>Additional clinical details</h3>
+                        </div>
                         <label className="field full-width">
                           <FormLabel>Other symptoms or details <span className="optional-label">Optional</span></FormLabel>
                           <Input className={inputClass} placeholder="Anything else the patient has noticed…" {...register("otherSymptoms")} />
@@ -995,6 +1009,10 @@ function App({
                       </div>
                       <div className="form-divider" />
 
+                      <div className="form-group-heading">
+                        <h3>Relevant clinical history</h3>
+                        <span>Include information relevant to this visit.</span>
+                      </div>
                       <div className="form-grid history-grid">
                         <label className="field">
                           <FormLabel>Medical history <span className="optional-label">Optional</span></FormLabel>
@@ -1131,7 +1149,7 @@ function App({
                 <h3>Listen first. Record clearly.</h3>
                 <p>Use the patient's own words where possible. Record what they report without inferring a diagnosis.</p>
                 <div className="guidance-rule" />
-                <div className="guidance-disclaimer"><ShieldCheck size={15} /><span>Decision support only — not a diagnosis.</span></div>
+                <div className="guidance-disclaimer"><ShieldCheck size={15} /><span>Decision support only, not a diagnosis.</span></div>
               </Card>
 
               <div className="offline-card">
@@ -1141,7 +1159,14 @@ function App({
 
               <div className="help-link">
                 <span>Need help with this form?</span>
-                <button type="button">View intake guide <ChevronRight size={14} /></button>
+                <a
+                  href="/intake-guide.pdf"
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Open the patient intake guide PDF in a new tab"
+                >
+                  View intake guide <ChevronRight size={14} />
+                </a>
               </div>
             </aside>
           </div>}

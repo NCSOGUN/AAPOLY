@@ -26,21 +26,18 @@ Use `ent-server.hostl.cloud` as your primary base URL.
 
 ---
 
-## Your API Key (Development)
+## Desktop API authentication
 
-```
-X-API-Key: <ENT_API_KEY>
-```
+The desktop app must not contain a shared consumer API key. Keys configured in
+frontend environment variables are embedded in the installer and can be
+extracted. The app authenticates staff through `/hospital-auth`, then uses the
+returned `hu_` user token for subsequent API calls.
 
-Include this header on **every request**. Obtain the development key through
-the approved team channel, store it in local environment configuration, and
-never commit or publish the key.
-
-```typescript
-// config.ts
-export const API_BASE_URL = "https://ent-server.hostl.cloud/api/v1";
-export const API_KEY = process.env.ENT_API_KEY; // load from env
-```
+The live API documentation currently says every endpoint requires a
+server-side consumer key. The backend must be updated to support the
+hospital-token flow below, or the desktop app must call a server-side proxy
+that holds the consumer key. Do not work around this requirement by bundling
+the key or storing it in the desktop database.
 
 ---
 
@@ -100,12 +97,13 @@ Content-Type: application/json
 - The full `facility` object (for offline use)
 
 ### Layer 2 — All subsequent calls (online or offline)
-Once you have the token, use it as your API key:
+Once you have the token, use it as the API key for subsequent endpoints:
 ```http
 X-API-Key: hu_xxxxxxxxxxxx...
 ```
 
-This token works for all `/api/v1/*` endpoints — no separate API key needed.
+This token works for all `/api/v1/*` endpoints — no separate consumer key is
+needed in the desktop app.
 
 ### Token verification (periodic online check)
 When the app comes online after offline use:
@@ -335,6 +333,5 @@ All errors follow this shape:
 - **API Docs (interactive):** `https://ent-server.hostl.cloud/docs`
 - **Admin panel (account management):** `https://ent-server.hostl.cloud/admin`
 - For new hospital user accounts or token resets → contact the ENT-Care platform admin
-
 
 

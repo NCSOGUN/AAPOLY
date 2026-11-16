@@ -3,7 +3,6 @@
 
   const API_BASE_URL =
     import.meta.env.VITE_API_BASE_URL ?? "https://ent-server.hostl.cloud/api/v1";
-  const DEVELOPMENT_API_KEY = import.meta.env.VITE_ENT_API_KEY;
 
 export type HospitalFacility = {
   id: string;
@@ -159,15 +158,6 @@ function apiFetch(url: string, init: RequestInit): Promise<Response> {
   return isTauri() ? tauriFetch(url, init) : fetch(url, init);
 }
 
-function apiKey(): string {
-  if (!DEVELOPMENT_API_KEY?.trim()) {
-    throw new Error(
-      "The development API key is not configured. Copy .env.example to .env and set VITE_ENT_API_KEY.",
-    );
-  }
-  return DEVELOPMENT_API_KEY.trim();
-}
-
 async function request<T>(
   path: string,
   token?: string,
@@ -175,7 +165,7 @@ async function request<T>(
 ): Promise<T> {
   const headers = new Headers(init.headers);
   headers.set("Accept", "application/json");
-  headers.set("X-API-Key", token ?? apiKey());
+  if (token) headers.set("X-API-Key", token);
   if (init.body) headers.set("Content-Type", "application/json");
 
   let response: Response;
@@ -232,7 +222,6 @@ export async function hospitalLogin(
 
 export async function verifyHospitalSession(token: string): Promise<HospitalUser> {
   const headers = new Headers({
-    "X-API-Key": apiKey(),
     "X-Hospital-Token": token,
   });
   let response: Response;

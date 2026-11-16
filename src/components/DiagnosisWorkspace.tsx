@@ -800,7 +800,7 @@ export function DiagnosisWorkspace({
 
           <p className="diagnosis-disclaimer">
             <ShieldCheck size={14} />
-            Decision support only — suggested findings are not a confirmed diagnosis. A clinician
+            Decision support only, suggested findings are not a confirmed diagnosis. A clinician
             must review the patient and make the final decision.
           </p>
 

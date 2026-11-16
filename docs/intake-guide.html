@@ -1,0 +1,650 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ENT-Care Patient Intake Guide</title>
+    <style>
+      :root {
+        color: #263431;
+        background: #e9efec;
+        font-family: Arial, Helvetica, sans-serif;
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        --green: #176f65;
+        --dark-green: #174e47;
+        --ink: #263431;
+        --muted: #61706c;
+        --line: #dce5e1;
+        --pale: #f2f7f5;
+        --amber: #7d5411;
+        --amber-bg: #fff7e6;
+        --red: #943d32;
+        --red-bg: #fff3ef;
+      }
+
+      * { box-sizing: border-box; }
+
+      @page {
+        size: A4;
+        margin: 15mm 16mm 17mm;
+        @bottom-left {
+          color: #77827f;
+          content: "ENT-Care  |  Patient Intake Guide";
+          font: 8pt Arial, Helvetica, sans-serif;
+        }
+        @bottom-right {
+          color: #77827f;
+          content: "Authorised hospital and specialist staff";
+          font: 8pt Arial, Helvetica, sans-serif;
+        }
+      }
+
+      body {
+        margin: 0;
+        background: #e9efec;
+        color: var(--ink);
+        font-size: 10pt;
+        line-height: 1.5;
+      }
+
+      .page {
+        position: relative;
+        width: 210mm;
+        min-height: 297mm;
+        margin: 0 auto 12px;
+        padding: 18mm 17mm 19mm;
+        background: white;
+        box-shadow: 0 2px 12px rgb(25 50 42 / 10%);
+        break-after: page;
+      }
+
+      .page:last-child { break-after: auto; }
+
+      .brandline {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border-bottom: 2px solid var(--green);
+        padding-bottom: 9px;
+        color: var(--dark-green);
+        font-size: 8pt;
+        font-weight: 700;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+      }
+
+      .brandline span:last-child {
+        color: #77827f;
+        font-size: 7pt;
+        font-weight: 500;
+        letter-spacing: .02em;
+        text-align: right;
+        text-transform: none;
+      }
+
+      .eyebrow {
+        margin: 0 0 7px;
+        color: var(--green);
+        font-size: 8pt;
+        font-weight: 700;
+        letter-spacing: .13em;
+        text-transform: uppercase;
+      }
+
+      h1, h2, h3, p { margin-top: 0; }
+      h1 {
+        max-width: 150mm;
+        margin-bottom: 10px;
+        color: #1d302d;
+        font-size: 31pt;
+        font-weight: 700;
+        letter-spacing: -.04em;
+        line-height: 1.12;
+      }
+
+      h2 {
+        margin: 23px 0 10px;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 7px;
+        color: #243a36;
+        font-size: 16pt;
+        line-height: 1.25;
+      }
+
+      h3 {
+        margin: 0 0 5px;
+        color: #2b403b;
+        font-size: 10.5pt;
+        line-height: 1.35;
+      }
+
+      p { margin-bottom: 9px; }
+      .lead {
+        max-width: 145mm;
+        margin-bottom: 20px;
+        color: #566662;
+        font-size: 13pt;
+        line-height: 1.55;
+      }
+
+      .cover { display: flex; flex-direction: column; }
+      .cover .hero {
+        margin: 20mm 0 14mm;
+        border-left: 5px solid var(--green);
+        padding: 4px 0 5px 16px;
+      }
+      .cover .hero h1 { margin-bottom: 12px; }
+      .cover .hero .lead { margin-bottom: 0; }
+      .cover .cover-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 22px;
+        margin-top: 17px;
+        color: #697773;
+        font-size: 8.5pt;
+      }
+      .cover .cover-meta strong { color: #344944; }
+      .callout {
+        margin: 12px 0 15px;
+        border: 1px solid #d5e5dd;
+        border-left: 4px solid var(--green);
+        border-radius: 5px;
+        background: var(--pale);
+        padding: 10px 12px;
+      }
+      .callout strong { color: var(--dark-green); }
+      .callout p:last-child { margin-bottom: 0; }
+      .callout.warning {
+        border-color: #eed9ac;
+        border-left-color: #c28a2a;
+        background: var(--amber-bg);
+      }
+      .callout.warning strong { color: var(--amber); }
+      .callout.urgent {
+        border-color: #efd0c9;
+        border-left-color: #b64c3c;
+        background: var(--red-bg);
+      }
+      .callout.urgent strong { color: var(--red); }
+
+      .step-intro {
+        display: grid;
+        grid-template-columns: 35px 1fr;
+        align-items: start;
+        gap: 11px;
+        margin: 18px 0 14px;
+      }
+      .step-badge {
+        display: grid;
+        width: 32px;
+        height: 32px;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--green);
+        color: #fff;
+        font-size: 10pt;
+        font-weight: 700;
+      }
+      .step-intro h2 {
+        margin: 0 0 4px;
+        border: 0;
+        padding: 0;
+        font-size: 17pt;
+      }
+      .step-intro p { margin: 0; color: var(--muted); }
+
+      .field-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 9pt;
+        line-height: 1.4;
+      }
+      .field-table th {
+        background: #edf4f1;
+        color: #2c4841;
+        font-size: 8pt;
+        font-weight: 700;
+        text-align: left;
+      }
+      .field-table th, .field-table td {
+        border-bottom: 1px solid #e3e9e6;
+        padding: 5px 8px;
+        vertical-align: top;
+      }
+      .field-table td:first-child {
+        width: 29%;
+        color: #30443f;
+        font-weight: 700;
+      }
+      .field-table tr { break-inside: avoid; }
+
+      .two-col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 11px;
+        margin: 12px 0;
+      }
+      .info-card {
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        padding: 11px 12px;
+      }
+      .info-card p:last-child { margin-bottom: 0; }
+      .info-card ul, .check-list, .steps-list {
+        margin: 6px 0 0;
+        padding-left: 18px;
+      }
+      li { margin: 0 0 4px; }
+      .compact-list { columns: 2; column-gap: 22px; }
+      .compact-list li { break-inside: avoid; }
+      .tag {
+        display: inline-block;
+        margin-left: 4px;
+        border-radius: 10px;
+        background: #edf2ef;
+        padding: 1px 6px;
+        color: #5e6b67;
+        font-size: 7pt;
+        font-weight: 600;
+        vertical-align: 1px;
+        white-space: nowrap;
+      }
+
+      .review-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 7px 14px;
+        margin: 10px 0;
+      }
+      .review-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 7px;
+        color: #40514c;
+        font-size: 9pt;
+      }
+      .box {
+        width: 13px;
+        height: 13px;
+        flex: 0 0 auto;
+        margin-top: 1px;
+        border: 1px solid #82918c;
+        border-radius: 2px;
+      }
+      .small { color: var(--muted); font-size: 8.5pt; }
+      .page-label {
+        margin: 0 0 5px;
+        color: #71807b;
+        font-size: 8pt;
+        font-weight: 700;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+      }
+      .section-gap { margin-top: 17px; }
+      .no-break { break-inside: avoid; }
+
+      @media screen {
+        .page { min-height: 297mm; }
+      }
+      @media print {
+        body { background: white; }
+        .page {
+          width: auto;
+          min-height: 0;
+          margin: 0;
+          padding: 0;
+          box-shadow: none;
+        }
+        .cover { min-height: 258mm; }
+        .page:last-child { font-size: 9.5pt; line-height: 1.4; }
+        .page:last-child h2 { margin: 14px 0 6px; }
+        .page:last-child p { margin-bottom: 6px; }
+        .page:last-child .review-grid { gap: 4px 10px; margin: 6px 0; }
+        .page:last-child .steps-list li { margin-bottom: 2px; }
+        .page:last-child .callout { margin: 8px 0 10px; padding: 8px 10px; }
+        .page:last-child .field-table { font-size: 8.5pt; }
+        .page:last-child .field-table th,
+        .page:last-child .field-table td { padding: 3px 6px; }
+        a { color: inherit; text-decoration: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="page cover">
+        <div class="brandline">
+          <span>ENT-Care Hospital Workspace</span>
+          <span>Staff reference document</span>
+        </div>
+        <div class="hero">
+          <p class="eyebrow">Clinical operations · Patient intake</p>
+          <h1>Patient Intake Guide</h1>
+          <p class="lead">
+            A practical, field-by-field guide to recording patient details,
+            symptoms and relevant history clearly and consistently in ENT-Care.
+          </p>
+          <div class="cover-meta">
+            <span><strong>Audience:</strong> authorised hospital and specialist staff</span>
+            <span><strong>Version:</strong> 1.0</span>
+            <span><strong>Issued:</strong> November 2026</span>
+          </div>
+        </div>
+
+        <h2>Purpose of this guide</h2>
+        <p>
+          Use this guide while completing the three-step digital intake form or
+          the printed blank form. It explains what each field is for, what
+          information to record, and how to complete the intake safely.
+        </p>
+        <div class="callout">
+          <strong>Intake is documentation, not diagnosis.</strong>
+          <p>
+            Record information the patient reports and relevant history. Do not
+            use the intake form to make or imply a diagnosis. Clinical
+            assessment and decisions remain the responsibility of a qualified
+            clinician.
+          </p>
+        </div>
+
+        <h2>Before you begin</h2>
+        <ul class="check-list">
+          <li>Sign in with your own authorised hospital account and confirm the correct facility.</li>
+          <li>Confirm the patient's identity using your facility's approved procedure.</li>
+          <li>Explain what information is being recorded and obtain the consent required by your facility and the ENT-Care Terms of Use.</li>
+          <li>Collect only information needed for the patient's care, and enter it where others cannot view it unnecessarily.</li>
+          <li>If urgent warning symptoms are present, follow emergency procedures immediately; do not delay care to finish the form.</li>
+        </ul>
+
+        <div class="two-col section-gap">
+          <div class="info-card">
+            <h3>The three steps</h3>
+            <ol class="steps-list">
+              <li>Patient details</li>
+              <li>Symptoms and concerns</li>
+              <li>Health history and attachments</li>
+            </ol>
+          </div>
+          <div class="info-card">
+            <h3>How long it takes</h3>
+            <p>
+              The workspace estimates 3–5 minutes. Allow more time when the
+              patient has multiple symptoms or relevant history.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="page">
+        <div class="brandline">
+          <span>ENT-Care Hospital Workspace</span>
+          <span>Step 1 of 3</span>
+        </div>
+        <div class="step-intro">
+          <span class="step-badge">01</span>
+          <div>
+            <h2>Patient details</h2>
+            <p>Enter identifying and contact details accurately. Required fields are marked with an asterisk.</p>
+          </div>
+        </div>
+
+        <table class="field-table">
+          <thead><tr><th>Field</th><th>What to enter</th></tr></thead>
+          <tbody>
+            <tr><td>First name <span class="tag">Required</span></td><td>Enter the patient's given name as recorded by your facility. Avoid nicknames unless that is the only name the patient can provide; follow local identity procedures.</td></tr>
+            <tr><td>Last name <span class="tag">Required</span></td><td>Enter the patient's family name. Check spelling with the patient or their authorised representative.</td></tr>
+            <tr><td>Date of birth <span class="tag">Required</span></td><td>Select the full date of birth using the date control. Confirm the day, month and year; do not estimate. If the date is unknown, follow your facility's intake procedure rather than entering a guessed date.</td></tr>
+            <tr><td>Sex <span class="tag">Required</span></td><td>Select the option that the patient provides or that is recorded under your facility's procedure: Female, Male, Intersex, or Prefer not to say. Do not infer this from appearance.</td></tr>
+            <tr><td>Phone number <span class="tag">Required</span></td><td>Enter a reachable contact number, including the country code when appropriate (for example, +234). Check the digits with the patient. The form requires at least seven characters.</td></tr>
+            <tr><td>Email address <span class="tag">Optional</span></td><td>Enter an address only if the patient provides one and it is relevant. Check its spelling; if provided, it must be in a valid email format.</td></tr>
+            <tr><td>Residential address or location <span class="tag">Required</span></td><td>Enter a useful location such as street, area, town or community. Use enough detail for follow-up according to facility practice.</td></tr>
+            <tr><td>Emergency contact <span class="tag">Optional</span></td><td>Enter the contact person's name and phone number in this field when appropriate. Obtain the patient's permission and follow your facility's rules for recording another person's details.</td></tr>
+          </tbody>
+        </table>
+
+        <div class="callout section-gap">
+          <strong>Accuracy and privacy</strong>
+          <p>
+            Check names, date of birth and phone number before continuing.
+            Avoid entering unrelated personal details. Do not leave the
+            workspace visible to unauthorised people.
+          </p>
+        </div>
+        <h3>Moving to the next step</h3>
+        <p>
+          Select <strong>Continue to symptoms</strong>. The app checks required
+          patient-detail fields before moving on. If a field is missing or
+          invalid, an error appears beneath it; correct the field and continue.
+          You can return to this step using <strong>Back</strong> or the step
+          navigation.
+        </p>
+        <p class="small">
+          The email field is optional. The app requires a first name, last name,
+          date of birth, sex, phone number and location to continue.
+        </p>
+      </section>
+
+      <section class="page">
+        <div class="brandline">
+          <span>ENT-Care Hospital Workspace</span>
+          <span>Step 2 of 3</span>
+        </div>
+        <div class="step-intro">
+          <span class="step-badge">02</span>
+          <div>
+            <h2>Symptoms and concerns</h2>
+            <p>Describe the reason for the visit and select the affected areas and symptoms.</p>
+          </div>
+        </div>
+
+        <table class="field-table">
+          <thead><tr><th>Field</th><th>What to enter</th></tr></thead>
+          <tbody>
+            <tr><td>Main concern <span class="tag">Required</span></td><td>Summarise the main reason for the visit in the patient's own words where possible. Include the main symptom and relevant context such as side or timing if reported. The app requires at least five characters. Avoid diagnostic conclusions.</td></tr>
+            <tr><td>Affected area <span class="tag">Required</span></td><td>Select every area related to the current concern: Ear, Nose and/or Throat. Choose all that apply; selecting an area reveals its symptom choices. At least one area is required.</td></tr>
+            <tr><td>Symptoms reported <span class="tag">Required</span></td><td>Select each symptom the patient reports from the choices shown for the selected area(s). At least one symptom must be selected. If a symptom is not listed, describe it in “Other symptoms or details.”</td></tr>
+            <tr><td>Other symptoms or details <span class="tag">Optional</span></td><td>Record additional symptoms or useful detail not captured by the selections. Be factual and concise; include duration, frequency or side when the patient reports it.</td></tr>
+            <tr><td>When did it begin? <span class="tag">Optional</span></td><td>Record the patient's description of onset or duration, such as “about four days ago,” “gradually over several weeks,” or “comes and goes.” Do not convert an uncertain account into a precise date.</td></tr>
+            <tr><td>Pain level <span class="tag">Optional</span></td><td>Select the patient's reported pain score from 0 to 10. Zero means no pain and 10 means the worst pain. Leave as “Not reported” if not assessed or the patient cannot provide a score.</td></tr>
+            <tr><td>Effect on daily activities <span class="tag">Optional</span></td><td>Note the effect described by the patient, for example on sleep, work, eating, communication or usual activities. Do not add effects that were not reported or assessed.</td></tr>
+          </tbody>
+        </table>
+
+        <h3 class="section-gap">Symptom choices in the form</h3>
+        <div class="two-col">
+          <div class="info-card">
+            <h3>Ear</h3>
+            <ul class="compact-list">
+              <li>Ear pain</li><li>Hearing difficulty</li><li>Ear discharge</li><li>Ringing</li>
+              <li>Blocked ear</li><li>Itching</li><li>Dizziness</li><li>Balance problems</li>
+            </ul>
+          </div>
+          <div class="info-card">
+            <h3>Nose</h3>
+            <ul class="compact-list">
+              <li>Nasal congestion</li><li>Runny nose</li><li>Sneezing</li><li>Nose bleeding</li>
+              <li>Sinus pain</li><li>Facial pressure</li><li>Loss of smell</li>
+            </ul>
+          </div>
+          <div class="info-card">
+            <h3>Throat</h3>
+            <ul class="compact-list">
+              <li>Sore throat</li><li>Difficulty swallowing</li><li>Hoarseness</li><li>Voice changes</li>
+              <li>Persistent cough</li><li>Tonsil problems</li><li>Neck swelling</li>
+            </ul>
+          </div>
+          <div class="info-card">
+            <h3>Selection tips</h3>
+            <ul>
+              <li>Select all relevant areas first.</li>
+              <li>Choose only symptoms the patient reports.</li>
+              <li>If you remove an area, its selected symptoms are also removed.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="callout">
+          <strong>Keep the patient's account distinct from clinical findings.</strong>
+          <p>
+            Use phrases such as “patient reports” for reported symptoms.
+            Record examination findings in the appropriate clinical record,
+            not as if the patient reported them.
+          </p>
+        </div>
+      </section>
+
+      <section class="page">
+        <div class="brandline">
+          <span>ENT-Care Hospital Workspace</span>
+          <span>Step 3 of 3</span>
+        </div>
+        <div class="step-intro">
+          <span class="step-badge">03</span>
+          <div>
+            <h2>Health history and attachments</h2>
+            <p>Capture relevant background, handle optional images carefully, and check urgent symptoms.</p>
+          </div>
+        </div>
+
+        <table class="field-table">
+          <thead><tr><th>Field</th><th>What to enter</th></tr></thead>
+          <tbody>
+            <tr><td>Medical history <span class="tag">Optional</span></td><td>Enter relevant existing conditions, previous ENT concerns, operations or other history that may help the clinician understand this visit. Include only information relevant to care.</td></tr>
+            <tr><td>Known allergies <span class="tag">Optional</span></td><td>List known allergies and the substance or reaction if known. If the patient reports none, record “None known.” Do not leave uncertainty sounding like a confirmed absence.</td></tr>
+            <tr><td>Current medications <span class="tag">Optional</span></td><td>Record medication names and, if known, dose and frequency. Include prescribed and over-the-counter medicines when relevant. Do not guess missing doses.</td></tr>
+            <tr><td>Previous treatment <span class="tag">Optional</span></td><td>Note treatment tried for the current concern and whether the patient says it helped. Include approximate timing when useful and known.</td></tr>
+          </tbody>
+        </table>
+
+        <h3 class="section-gap">Images of the affected area</h3>
+        <p>
+          Images are optional. Add them only when clinically relevant, permitted
+          by facility policy and supported by the patient's explicit informed
+          consent. The interface accepts up to three JPG, PNG or WebP images,
+          each under 4 MB.
+        </p>
+        <ul class="check-list">
+          <li>Use an image of the relevant clinical area only; avoid unnecessary identifying content.</li>
+          <li>Confirm the patient understands that the image will be sent for online analysis and may be retained for quality improvement or specialist review as described in the Terms of Use.</li>
+          <li>Image selection does not itself run analysis or send the image. The separate analysis workflow asks for consent again before images are submitted.</li>
+          <li>Images are kept for the current intake session and are not saved in the encrypted local intake record. Remove an image from the session if it was selected in error.</li>
+        </ul>
+        <div class="callout warning">
+          <strong>Never upload an image without the required consent.</strong>
+          <p>
+            If consent is not provided, leave the image out. Complete the intake
+            using the available text fields and follow facility procedure.
+          </p>
+        </div>
+
+        <h3>Immediate attention check</h3>
+        <p>
+          Ask whether any of the listed symptoms are present. Select every
+          symptom the patient has. The form lists:
+        </p>
+        <div class="review-grid">
+          <div class="review-item"><span class="box"></span><span>Severe difficulty breathing</span></div>
+          <div class="review-item"><span class="box"></span><span>Uncontrolled bleeding</span></div>
+          <div class="review-item"><span class="box"></span><span>Sudden hearing loss</span></div>
+          <div class="review-item"><span class="box"></span><span>Severe throat swelling</span></div>
+        </div>
+        <div class="callout urgent">
+          <strong>If a potential emergency symptom is present, arrange immediate clinical assessment.</strong>
+          <p>
+            Do not wait for a routine appointment or delay emergency care to
+            finish the intake or run an analysis. Follow your institution's
+            emergency protocol.
+          </p>
+        </div>
+      </section>
+
+      <section class="page">
+        <div class="brandline">
+          <span>ENT-Care Hospital Workspace</span>
+          <span>Review, save and continue care</span>
+        </div>
+        <p class="page-label">Completion and information handling</p>
+        <h2 style="margin-top: 8px">Review before completing</h2>
+        <p>
+          Take a moment to check the record with the patient or their
+          representative, where appropriate. Correct errors before finishing.
+        </p>
+        <div class="review-grid">
+          <div class="review-item"><span class="box"></span><span>Patient name and date of birth are accurate.</span></div>
+          <div class="review-item"><span class="box"></span><span>Contact details are complete and correctly spelled.</span></div>
+          <div class="review-item"><span class="box"></span><span>Main concern reflects what the patient reported.</span></div>
+          <div class="review-item"><span class="box"></span><span>At least one affected area and symptom are selected.</span></div>
+          <div class="review-item"><span class="box"></span><span>Relevant history is factual; unknown details are not guessed.</span></div>
+          <div class="review-item"><span class="box"></span><span>Any image has the required consent and is relevant.</span></div>
+          <div class="review-item"><span class="box"></span><span>Urgent symptoms have been acted on under facility protocol.</span></div>
+          <div class="review-item"><span class="box"></span><span>Information collected is limited to what is needed for care.</span></div>
+        </div>
+
+        <h2>Save and continue</h2>
+        <ol class="steps-list">
+          <li>
+            <strong>Draft saving:</strong> the form saves intake details securely
+            on this device as you work. Check the status near the top of the
+            page; if it reports a save problem, do not assume the draft was
+            saved.
+          </li>
+          <li>
+            <strong>Complete intake:</strong> select this button on Step 3 to
+            save the completed visit locally. The app then displays the
+            clinical-analysis workspace.
+          </li>
+          <li>
+            <strong>Analysis is separate:</strong> completing the intake does
+            not automatically send it to the service or run analysis. A
+            clinician must choose to run online clinical analysis. Review
+            the patient's consent and the on-screen image consent before
+            submitting any images.
+          </li>
+          <li>
+            <strong>Review or print:</strong> use the saved visits area to
+            reopen local records. The print blank form action creates a
+            paper copy for handwriting; protect completed copies as
+            confidential patient records.
+          </li>
+        </ol>
+
+        <div class="callout">
+          <strong>Local records and connectivity</strong>
+          <p>
+            Patient intake and saved reports are encrypted on this device.
+            Online analysis and other online services require internet
+            connectivity. Follow your institution's device security,
+            retention, access and incident-reporting policies.
+          </p>
+        </div>
+
+        <h2>Common validation messages</h2>
+        <table class="field-table">
+          <thead><tr><th>Message or issue</th><th>What to do</th></tr></thead>
+          <tbody>
+            <tr><td>Required patient field missing</td><td>Complete the field marked with an error. Verify the information with the patient; do not enter a guess just to continue.</td></tr>
+            <tr><td>Main concern is too short</td><td>Add a brief, factual description of at least five characters.</td></tr>
+            <tr><td>No affected area or symptom selected</td><td>Select one or more areas, then select at least one symptom from the displayed choices.</td></tr>
+            <tr><td>Email address is invalid</td><td>Correct the spelling or clear the optional email field if the patient has not provided one.</td></tr>
+            <tr><td>Image cannot be added</td><td>Use JPG, PNG or WebP, keep each file under 4 MB, and add no more than three images.</td></tr>
+            <tr><td>Local save reports an error</td><td>Keep the workspace open, note the error, and contact your facility administrator or support. Do not rely on an unsaved draft.</td></tr>
+          </tbody>
+        </table>
+
+        <h2>Need assistance?</h2>
+        <p>
+          For account or device support, contact your hospital administrator
+          or the ENT-Care support contact provided by your organisation.
+          For clinical decisions, follow your facility's clinical and
+          emergency protocols.
+        </p>
+        <p class="small">
+          Document version 1.0 · November 2026 · Intended for authorised
+          hospital and specialist staff. Use with the current ENT-Care
+          Terms of Use and local facility procedures.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>
