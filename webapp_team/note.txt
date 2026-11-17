@@ -1,0 +1,227 @@
+# ENT 3D Anatomy Workspace
+## Project Foundation & Implementation Plan
+
+### 1. Project Objective
+
+Build a modern, lightweight and fully interactive 3D ENT anatomy workspace that allows users to explore human ear, nose, sinuses and throat anatomy directly inside a web application.
+
+The experience should provide the ability to rotate, zoom, select, isolate and explore individual anatomical structures.
+
+The application should prioritize performance, usability, anatomical accuracy and responsive design.
+
+### 2. Available 3D Assets
+
+The following models have been downloaded:
+
+| Asset | File |
+|---|---|
+| Ear | ear.glb |
+| Alternative ear | ear-anatomy-model.glb |
+| Nose | nose.glb |
+| Larynx | larynx.glb |
+| Pharynx | pharynx.glb |
+
+All original files must be preserved. Models should be inspected before optimization or modification.
+
+### 3. Proposed Technology Stack
+
+- Frontend: React + Vite
+- 3D rendering: Three.js
+- Model loading: GLTFLoader
+- Camera interaction: OrbitControls
+- Model compression: Draco / Meshopt
+- Styling: CSS or Tailwind CSS
+- Model storage: Static asset hosting or object storage
+
+### 4. Workspace Structure
+
+The workspace will contain five navigation sections:
+
+1. All regions
+2. Ear
+3. Nose & Sinuses
+4. Throat
+5. Skull Base (future expansion)
+
+### 5. Core Functional Requirements
+
+**3D Viewer**
+- Rotate anatomical models.
+- Zoom in and out.
+- Pan around the model.
+- Reset camera position.
+- Switch between anterior, lateral and inferior views.
+- Responsive touch interaction.
+
+**Anatomical Structures**
+- Display a searchable structure list.
+- Select individual anatomical structures.
+- Highlight selected structures.
+- Isolate selected structures.
+- Hide and show individual structures.
+- Restore the original model arrangement.
+- Display anatomical names and descriptions.
+
+**Navigation**
+- Switch between ENT regions.
+- Load models on demand.
+- Maintain a consistent viewer experience across sections.
+
+### 6. Performance Requirements
+
+- Load only the currently selected anatomical model.
+- Avoid downloading all models during initial page loading.
+- Optimize geometry and textures.
+- Implement browser caching.
+- Support mobile and desktop devices.
+- Provide loading indicators and error handling.
+- Avoid unnecessary re-rendering.
+
+### 7. Implementation Phases
+
+**Phase 1 – Asset Inspection**
+- Inspect all five GLB files.
+- Compare both ear models.
+- Identify mesh names and individual anatomical structures.
+- Check model geometry, materials and textures.
+- Verify original licensing and attribution.
+- Identify missing structures.
+
+**Phase 2 – 3D Viewer Foundation**
+- Establish the React + Vite project.
+- Integrate Three.js.
+- Implement model loading.
+- Configure lighting, camera and controls.
+- Test all models individually.
+
+**Phase 3 – Interactive Anatomy**
+- Implement structure selection.
+- Implement highlighting and isolation.
+- Add anatomical structure search.
+- Add model visibility controls.
+- Implement reset and restoration features.
+
+**Phase 4 – ENT Workspace Interface**
+- Build the anatomical sidebar.
+- Implement region navigation.
+- Add model information panels.
+- Implement responsive layouts.
+
+**Phase 5 – Optimization & Testing**
+- Compress and optimize models.
+- Test mobile performance.
+- Verify selection accuracy.
+- Test loading speed.
+- Validate all anatomical labels.
+- Complete accessibility and usability checks.
+
+### 8. Important Development Principle
+
+The original anatomical model files must not be treated as simple decorative 3D objects.
+
+The goal is to build an actual interactive anatomical exploration system in which individual structures can be identified, selected, isolated and explored.
+
+The application should remain modular so that additional anatomical regions can be introduced without rebuilding the viewer.
+
+### 9. Expected Outcome
+
+A professional ENT 3D Anatomy Workspace that provides an interactive educational anatomy experience, with ear, nose, sinuses, larynx and pharynx models, designed for smooth operation on desktop and mobile devices.
+
+
+I would slightly refine our technology choices to avoid unnecessary dependencies and rendering overhead.
+1. Final proposed technology stack
+Performance-first architecture
+Layer	Technology	Reason
+Frontend	React + Vite	Fast development and lightweight production builds
+Language	TypeScript	Reliable, maintainable code
+Styling	Tailwind CSS	Efficient styling
+UI	shadcn/ui	Customizable components
+Icons	Lucide React	Lightweight icon system
+3D engine	Three.js	Direct control over 3D rendering
+React integration	React Three Fiber	Declarative 3D components
+3D helpers	Drei	Useful camera and model utilities
+State	Zustand	Minimal state management
+Data fetching	TanStack Query	Efficient data caching
+Model compression	Draco / Meshopt	Smaller 3D downloads
+
+Important: We won't install every library just because it's available. Each dependency must justify its presence.
+2. Performance architecture
+This is how I want the application to work:
+ENT Workspace
+
+React application
+
+
+UI layer
+
+shadcn + Tailwind
+
+
+3D engine
+
+Three.js
+
+
+
+
+On-demand asset loader
+
+Load only the selected anatomical region
+
+Ear
+
+GLB
+
+
+Nose
+
+GLB
+
+
+Throat
+
+GLB
+
+
+
+
+Performance rules
+1. Never load all anatomical models on the initial page visit.
+2. Cache models after their first download.
+3. Use lazy loading and dynamic imports.
+4. Avoid unnecessary React re-renders during 3D interactions.
+5. Use compressed geometry and optimize textures.
+6. Reuse geometries and materials where possible.
+7. Limit unnecessary shadows and expensive lighting.
+8. Pause rendering when the viewer is inactive.
+9. Provide lower-detail models for less powerful devices when necessary.
+10. Keep the interface responsive even while a model loads.
+3. Our performance targets
+These are engineering goals, not guaranteed results.
+Measurement	Target
+Initial application JS	Under 200 KB gzipped, excluding separately loaded 3D engine chunks
+Initial 3D model downloads	Zero until needed
+Viewer interaction	Aim for 60 FPS on capable devices
+Cached model switching	Near-instant where practical
+Layout	Smooth on mobile and desktop
+Model loading	Progressive with loading indicators
+
+4. One important architectural decision
+I recommend separating the 3D viewer from the rest of the React interface.
+
+This means dragging, rotating, zooming and selecting anatomical structures shouldn't cause the entire application to re-render.
+
+We'll keep high-frequency 3D interactions inside the Three.js rendering layer and use Zustand for shared application state.
+
+This is particularly important for your anatomy workspace.
+
+5. Our development principle
+Fast. Lightweight. Interactive.
+- No unnecessary dependencies.
+- No unnecessary API calls.
+- No loading unused models.
+- No oversized interface components.
+- No sacrificing 3D performance for visual effects.
+- No compromising mobile responsiveness.
+
+I'm treating performance as a core requirement for every development decision going forward.
