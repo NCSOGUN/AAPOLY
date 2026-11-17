@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import PatientPageHeader from "@/components/patient-page-header";
 import { EntFacility, getFacilityList, isRecord } from "@/lib/ent-types";
+import { getUserLocation } from "@/lib/geolocation";
 import FacilityResults from "@/components/facility-results";
 
 const specialties = [
@@ -31,23 +32,24 @@ export default function HospitalFinder() {
   const [error, setError] = useState<string | null>(null);
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [gettingLocation, setGettingLocation] = useState(false);
 
-  const useLocation = () => {
+  const requestLocation = async () => {
     setError(null);
-    if (!navigator.geolocation) {
-      setError("Location is not available in this browser. Enter a town or city instead.");
-      return;
+    setGettingLocation(true);
+    try {
+      const coordinates = await getUserLocation();
+      setLatitude(coordinates.latitude);
+      setLongitude(coordinates.longitude);
+      setPlace("");
+      setLocationLabel("Your current location");
+    } catch (locationError) {
+      setError(locationError instanceof Error
+        ? locationError.message
+        : "Your location could not be determined. Try again or enter a town or city.");
+    } finally {
+      setGettingLocation(false);
     }
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        setLatitude(coords.latitude);
-        setLongitude(coords.longitude);
-        setLocationLabel("Your current location");
-        setError(null);
-      },
-      () => setError("Location access was not available. Enter a town or city instead."),
-      { enableHighAccuracy: false, timeout: 10_000, maximumAge: 60_000 },
-    );
   };
 
   const search = async () => {
@@ -118,9 +120,14 @@ export default function HospitalFinder() {
               <h3>Where should we look?</h3>
               <p>Your location is used to find nearby facilities and is not required.</p>
 
-              <button type="button" className="assessment-back-button" onClick={useLocation}>
+              <button
+                type="button"
+                className="assessment-back-button"
+                onClick={() => void requestLocation()}
+                disabled={gettingLocation}
+              >
                 <Navigation aria-hidden="true" size={16} />
-                {locationLabel || "Use my location"}
+                {gettingLocation ? "Getting your location…" : locationLabel || "Use my location"}
               </button>
 
               <label className="assessment-email-label" htmlFor="hospital-place">

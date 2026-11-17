@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   AlertCircle,
@@ -11,11 +11,14 @@ import {
   Copy,
   Download,
   MapPin,
+  Pencil,
   Search,
+  Volume2,
 } from "lucide-react";
 import { urgencyConfig } from "@/lib/urgency";
 import { downloadPatientReport } from "@/lib/download-report";
 import EmailReportForm from "@/components/email-report-form";
+import VoiceQuestion, { speakQuestionAloud } from "@/components/voice-question";
 import FacilityResults from "@/components/facility-results";
 import {
   EntAnalysisResult,
@@ -25,6 +28,7 @@ import {
   getFacilityList,
   isRecord,
 } from "@/lib/ent-types";
+import { getUserLocation } from "@/lib/geolocation";
 import PatientPageHeader from "@/components/patient-page-header";
 
 const areas = [
@@ -49,6 +53,30 @@ const areas = [
 ] as const;
 
 const durationOptions = ["1-3 days", "1 week", "2+ weeks", "months"] as const;
+const guidedQuestions = [
+  {
+    question: "Tell us exactly how you’re feeling.",
+    prompt:
+      "Describe what is bothering you, where it is, what it feels like, and anything that makes it better or worse.",
+    placeholder: "Your words will appear here. Review and correct them before confirming.",
+    maxLength: 5000,
+  },
+  {
+    question: "How long have you been feeling this way?",
+    prompt:
+      "Tell us when it started, or choose one of the suggested time periods. You can skip this if you are not sure.",
+    placeholder: "For example: since yesterday, about three days, or a few weeks.",
+    maxLength: 100,
+    quickAnswers: durationOptions,
+  },
+  {
+    question: "Is there anything else we should know?",
+    prompt:
+      "You can mention which side is affected, other symptoms, a recent illness, relevant conditions, medicines, or allergies. You can skip this question.",
+    placeholder: "Share any other details in your own words.",
+    maxLength: 3000,
+  },
+] as const;
 
 async function readApiResponse(response: Response) {
   const data: unknown = await response.json().catch(() => null);
@@ -125,6 +153,8 @@ function fileAsDataUrl(file: File) {
 
 export default function AssessmentForm() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [guidedQuestionIndex, setGuidedQuestionIndex] = useState(0);
+  const areaFieldRef = useRef<HTMLFieldSetElement | null>(null);
   const [symptoms, setSymptoms] = useState("");
   const [area, setArea] = useState<(typeof areas)[number]["value"] | null>(null);
   const [duration, setDuration] = useState<string>("");
@@ -167,7 +197,13 @@ export default function AssessmentForm() {
 
   const goNext = () => {
     if (!symptoms.trim()) {
-      setError("Describe what you’re feeling before continuing.");
+      setError("Please answer and confirm how you are feeling before continuing.");
+      setGuidedQuestionIndex(0);
+      return;
+    }
+
+    if (guidedQuestionIndex < guidedQuestions.length) {
+      setError("Please review and confirm each answer before continuing.");
       return;
     }
 
@@ -177,7 +213,44 @@ export default function AssessmentForm() {
 
   const goBack = () => {
     setError(null);
-    setStep((current) => (current === 3 ? 2 : 1));
+    if (step === 3) {
+      setStep(2);
+      return;
+    }
+    if (step === 2) {
+      setStep(1);
+      setGuidedQuestionIndex(0);
+      return;
+    }
+    if (guidedQuestionIndex > 0) setGuidedQuestionIndex((current) => current - 1);
+  };
+
+  const confirmGuidedAnswer = (index: number, answer: string) => {
+    if (index === 0) setSymptoms(answer);
+    if (index === 1) setDuration(answer);
+    if (index === 2) setAdditionalContext(answer);
+    setError(null);
+    setGuidedQuestionIndex(index + 1);
+  };
+
+  const skipGuidedAnswer = (index: number) => {
+    if (index === 1) setDuration("");
+    if (index === 2) setAdditionalContext("");
+    setError(null);
+    setGuidedQuestionIndex(index + 1);
+  };
+
+  const editGuidedAnswer = (index: number) => {
+    setError(null);
+    setGuidedQuestionIndex(index);
+  };
+
+  const speakAreaQuestion = () => {
+    if (!speakQuestionAloud(
+      "Where are you experiencing symptoms? Choose ear, nose, or throat, or leave this open if you are not sure.",
+    )) {
+      setError("Spoken questions are not available in this browser. The written question is still available.");
+    }
   };
 
   const handleSubmit = async () => {
@@ -374,26 +447,20 @@ export default function AssessmentForm() {
     }
   };
 
-  const handleUseLocation = () => {
+  const handleUseLocation = async () => {
     setLocationError(null);
-    if (!navigator.geolocation) {
-      setLocationError("Location is not available in this browser. Enter a town or city instead.");
-      return;
-    }
     setIsRequestingLocation(true);
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        setLatitude(coords.latitude);
-        setLongitude(coords.longitude);
-        setLocationError(null);
-        setIsRequestingLocation(false);
-      },
-      () => {
-        setLocationError("Location access was not available. Enter a town or city instead.");
-        setIsRequestingLocation(false);
-      },
-      { enableHighAccuracy: false, timeout: 10_000, maximumAge: 60_000 },
-    );
+    try {
+      const coordinates = await getUserLocation();
+      setLatitude(coordinates.latitude);
+      setLongitude(coordinates.longitude);
+    } catch (locationError) {
+      setLocationError(locationError instanceof Error
+        ? locationError.message
+        : "Your location could not be determined. Try again or enter a town or city.");
+    } finally {
+      setIsRequestingLocation(false);
+    }
   };
 
   const handleFindHospitals = async () => {
@@ -493,12 +560,14 @@ export default function AssessmentForm() {
                 ? "Your next steps."
                 : step === 2
                   ? "A little more context."
-                  : "Let’s start with what you feel."}
+                  : "Let’s take this one question at a time."}
             </h1>
             <p className="assessment-lede">
               {step === 3
                 ? "Review your guidance and the care options available to you."
-                : "A few details can help make your guidance more relevant. Start with the area that feels most connected."}
+                : step === 1
+                  ? "We’ll read each question aloud. Speak or type your answer, then check it before moving on."
+                  : "A few more details can help make your guidance more relevant."}
             </p>
           </div>
 
@@ -529,13 +598,28 @@ export default function AssessmentForm() {
 
             {step === 1 && (
               <div className="assessment-fields">
-                <fieldset className="assessment-region-field">
-                  <legend className="assessment-field-heading">
+                <div className="assessment-region-heading">
+                  <p id="assessment-area-question" className="assessment-field-heading">
                     <span className="assessment-field-number">01</span>
                     Where are you experiencing symptoms?
-                  </legend>
+                  </p>
+                  <button
+                    type="button"
+                    className="assessment-voice-replay"
+                    onClick={speakAreaQuestion}
+                    aria-label="Read the affected area question aloud"
+                  >
+                    <Volume2 aria-hidden="true" size={16} />
+                    Hear question
+                  </button>
+                </div>
+                <fieldset
+                  ref={areaFieldRef}
+                  aria-labelledby="assessment-area-question"
+                  className="assessment-region-field"
+                >
                   <p className="assessment-field-hint">
-                    Choose the area that feels closest. You can continue without selecting one.
+                    Choose the area that feels closest, or leave it open if you are not sure. You can change this before submitting.
                   </p>
                   <div className="assessment-area-grid">
                     {areas.map((option, index) => (
@@ -572,43 +656,86 @@ export default function AssessmentForm() {
                   </div>
                 </fieldset>
 
-                <div className="assessment-input-field">
-                  <label className="assessment-field-heading" htmlFor="symptoms">
-                    <span className="assessment-field-number">02</span>
-                    Describe what you’re feeling
-                  </label>
-                  <p className="assessment-field-hint">
-                    Include what it feels like and anything that makes it better or worse.
-                  </p>
-                  <textarea
-                    id="symptoms"
-                    rows={4}
-                    value={symptoms}
-                    onChange={(event) => setSymptoms(event.target.value)}
-                    className="assessment-textarea"
-                    placeholder="For example: a sore throat that feels worse when I swallow…"
-                  />
-                </div>
-
-                <fieldset className="assessment-duration-field">
-                  <legend className="assessment-field-heading">
-                    <span className="assessment-field-number">03</span>
-                    How long have you had these symptoms?
-                  </legend>
-                  <div className="assessment-duration-options">
-                    {durationOptions.map((option) => (
+                {guidedQuestionIndex < guidedQuestions.length ? (
+                  (() => {
+                    const question = guidedQuestions[guidedQuestionIndex];
+                    return (
+                      <VoiceQuestion
+                        key={guidedQuestionIndex}
+                        questionNumber={`0${guidedQuestionIndex + 2}`}
+                        question={question.question}
+                        prompt={question.prompt}
+                        initialValue={
+                          guidedQuestionIndex === 0
+                            ? symptoms
+                            : guidedQuestionIndex === 1
+                              ? duration
+                              : additionalContext
+                        }
+                        placeholder={question.placeholder}
+                        maxLength={question.maxLength}
+                        required={guidedQuestionIndex === 0}
+                        quickAnswers={"quickAnswers" in question ? question.quickAnswers : []}
+                        onConfirm={(answer) => confirmGuidedAnswer(guidedQuestionIndex, answer)}
+                        onSkip={
+                          guidedQuestionIndex > 0
+                            ? () => skipGuidedAnswer(guidedQuestionIndex)
+                            : undefined
+                        }
+                      />
+                    );
+                  })()
+                ) : (
+                  <section className="assessment-guided-review" aria-label="Review your answers">
+                    <div className="assessment-guided-review-heading">
+                      <div>
+                        <span className="assessment-result-index">CHECK BEFORE CONTINUING</span>
+                        <h3>Are these answers correct?</h3>
+                      </div>
+                      <p>Review each answer. Edit any detail that does not match what you meant.</p>
+                    </div>
+                    <article>
+                      <div>
+                        <span>AFFECTED AREA</span>
+                        <p>{areas.find((option) => option.value === area)?.label ?? "Not specified"}</p>
+                      </div>
                       <button
-                        key={option}
                         type="button"
-                        onClick={() => setDuration(option)}
-                        aria-pressed={duration === option}
-                        className={`assessment-duration-option${duration === option ? " is-active" : ""}`}
+                        className="assessment-back-button"
+                        onClick={() => areaFieldRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })}
                       >
-                        {option}
+                        <Pencil aria-hidden="true" size={14} /> Edit
                       </button>
-                    ))}
-                  </div>
-                </fieldset>
+                    </article>
+                    <article>
+                      <div>
+                        <span>HOW YOU FEEL</span>
+                        <p>{symptoms}</p>
+                      </div>
+                      <button type="button" className="assessment-back-button" onClick={() => editGuidedAnswer(0)}>
+                        <Pencil aria-hidden="true" size={14} /> Edit
+                      </button>
+                    </article>
+                    <article>
+                      <div>
+                        <span>HOW LONG</span>
+                        <p>{duration || "Not provided"}</p>
+                      </div>
+                      <button type="button" className="assessment-back-button" onClick={() => editGuidedAnswer(1)}>
+                        <Pencil aria-hidden="true" size={14} /> Edit
+                      </button>
+                    </article>
+                    <article>
+                      <div>
+                        <span>ADDITIONAL DETAILS</span>
+                        <p>{additionalContext || "None provided"}</p>
+                      </div>
+                      <button type="button" className="assessment-back-button" onClick={() => editGuidedAnswer(2)}>
+                        <Pencil aria-hidden="true" size={14} /> Edit
+                      </button>
+                    </article>
+                  </section>
+                )}
               </div>
             )}
 
@@ -1093,7 +1220,7 @@ export default function AssessmentForm() {
               <button
                 type="button"
                 onClick={goBack}
-                disabled={step === 1}
+                disabled={step === 1 && guidedQuestionIndex === 0}
                 className="assessment-back-button"
               >
                 <ArrowLeft aria-hidden="true" size={16} />
@@ -1101,8 +1228,13 @@ export default function AssessmentForm() {
               </button>
 
               {step === 1 ? (
-                <button type="button" onClick={goNext} className="assessment-continue-button">
-                  Continue <ArrowRight aria-hidden="true" size={16} />
+                <button
+                  type="button"
+                  onClick={goNext}
+                  disabled={guidedQuestionIndex < guidedQuestions.length}
+                  className="assessment-continue-button"
+                >
+                  Continue to your details <ArrowRight aria-hidden="true" size={16} />
                 </button>
               ) : step === 2 ? (
                 <button

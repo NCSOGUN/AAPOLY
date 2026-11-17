@@ -93,6 +93,8 @@ User opens app
   ↓
 Step 1: Symptom input
   → Text field: "Describe what you're feeling"
+  → Read each guided question aloud and optionally accept a spoken answer
+  → Show voice transcripts for review and explicit patient confirmation before continuing
   → Select: Affected area (Ear / Nose / Throat)
   → Select: How long? (1-3 days / 1 week / 2+ weeks / months)
   → Optional: Age
@@ -120,6 +122,14 @@ Step 5: Find nearby hospitals (triggered by button)
   → POST /api/v1/nearby-for-report
   → Show hospital cards with distance + travel times
 ```
+
+---
+
+### Guided Voice Input
+
+The assessment reads symptom, duration, and optional additional-context questions aloud using the browser's speech synthesis. Patients may answer with the browser's speech-recognition API or type instead. Microphone capture starts only after the patient selects voice input; interim or unconfirmed recognition is never sent to the ENT service. Every voice transcript must be reviewed and explicitly confirmed, and an available low-confidence result is flagged. The patient can edit or re-record each answer, skip optional questions, and review all answers before submitting.
+
+Speech recognition availability and language quality depend on the browser and device. The app does not record or store audio, but browser speech-recognition providers may process it according to their privacy terms. Keep the written question, text entry, and answer-confirmation controls available as fallbacks.
 
 ---
 
