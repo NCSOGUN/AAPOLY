@@ -11,6 +11,7 @@
     "db:push": "prisma db push",
     "db:seed": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed.ts",
     "db:import-conditions": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/import-conditions.ts",
+    "db:import-facilities": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/import-facilities.ts",
     "db:studio": "prisma studio"
   },
   "prisma": {

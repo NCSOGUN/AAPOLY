@@ -214,7 +214,8 @@ model PatientProfile {
 
 model DiagnosisReport {
   id              String    @id @default(cuid())
-  trackingId      String    @unique   // short human-readable: "ENT-2026-XXXXXX"
+  trackingId      String    @unique   // ENT-2026-XXXXXX or normalized phone e.g. "+2348012345678"
+  phoneTrackingId String?   @unique   // normalized phone number if user chose phone-based tracking
 
   // Input (what the user sent)
   symptoms        String
@@ -253,10 +254,15 @@ model DiagnosisReport {
   // Status
   status          String    @default("generated")  // generated | viewed | shared | archived
 
+  // SMS notification
+  smsSent         Boolean   @default(false)
+  smsSimulated    Boolean   @default(false)        // true when demo static code used
+
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
   @@index([trackingId])
+  @@index([phoneTrackingId])
   @@index([patientProfileId])
   @@index([urgencyScore])
   @@index([createdAt])

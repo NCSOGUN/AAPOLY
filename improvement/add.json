@@ -1,0 +1,481 @@
+{
+  "city": "Abeokuta",
+  "state": "Ogun State",
+  "country": "Nigeria",
+  "total_facilities_listed": 24,
+  "hospitals": [
+    {
+      "name": "Federal Medical Centre, Abeokuta (FMCA)",
+      "category": "Public Tertiary / Teaching & Referral Hospital",
+      "address": "Olabisi Onabanjo Way, Idi-Aba, Abeokuta 110118, Ogun State",
+      "coordinates": {
+        "latitude": 7.144071,
+        "longitude": 3.380450
+      },
+      "hotlines": [
+        "+234 803 339 8341",
+        "+234 806 242 6088",
+        "+234 703 275 7535",
+        "+234 803 376 5192"
+      ],
+      "specialties": [
+        "Emergency Medicine (24/7)",
+        "Internal Medicine (Cardiology, Neurology, Endocrinology, Nephrology)",
+        "General & Oncologic Surgery",
+        "Orthopaedics & Trauma",
+        "Plastic Surgery & Urology",
+        "Paediatrics & Neonatology (NICU)",
+        "Obstetrics & Gynaecology",
+        "Ophthalmology",
+        "Ear, Nose and Throat (ENT)",
+        "Oral & Maxillofacial Surgery / Dentistry",
+        "Mental Health & Behavioural Medicine",
+        "Oncology & Palliative Medicine",
+        "Radiology, Pathology, Haematology & Blood Transfusion",
+        "Physiotherapy & Community Medicine"
+      ]
+    },
+    {
+      "name": "Neuropsychiatric Hospital, Aro",
+      "category": "Public Federal Specialist Hospital",
+      "address": "Lagos-Abeokuta Expressway, Aro, Abeokuta 110103, Ogun State",
+      "coordinates": {
+        "latitude": 7.130000,
+        "longitude": 3.300000
+      },
+      "hotlines": [
+        "+234 803 842 2422",
+        "+234 903 638 0203",
+        "+234 701 073 7073"
+      ],
+      "specialties": [
+        "General Adult Psychiatry",
+        "Child & Adolescent Psychiatry",
+        "Forensic Psychiatry",
+        "Addiction & Substance Abuse Rehabilitation",
+        "Psychogeriatrics",
+        "Clinical Psychology & Psychiatric Social Work",
+        "Community Mental Health"
+      ]
+    },
+    {
+      "name": "Sacred Heart Hospital, Lantoro",
+      "category": "Missionary / Private Non-Profit Multi-Specialty Hospital",
+      "address": "Lantoro Road, Sapon / Lantoro, Abeokuta 111101, Ogun State",
+      "coordinates": {
+        "latitude": 7.163119,
+        "longitude": 3.362671
+      },
+      "hotlines": [
+        "+234 902 218 2620",
+        "+234 806 161 4954",
+        "+234 815 032 0559"
+      ],
+      "specialties": [
+        "General Medicine & Surgery",
+        "Obstetrics & Gynaecology",
+        "Paediatrics & Neonatology (NICU)",
+        "Kidney Dialysis (Haemodialysis)",
+        "Cardiology & Endocrinology",
+        "Orthopaedics",
+        "Burns & Plastic Surgery / Cleft Lip Care (Smile Train)",
+        "Ophthalmology (Eye Clinic)",
+        "Ear, Nose & Throat (ENT)",
+        "Dentistry",
+        "Psychiatry",
+        "Physiotherapy & Palliative Care"
+      ]
+    },
+    {
+      "name": "State Hospital, Ijaye (Ogun State Hospital Management Board)",
+      "category": "Public Secondary General Hospital",
+      "address": "Sokenu Road, Ijaye / Erunbe, Abeokuta 110101, Ogun State",
+      "coordinates": {
+        "latitude": 7.153306,
+        "longitude": 3.353028
+      },
+      "hotlines": [
+        "+234 803 337 7719",
+        "+234 803 472 2200"
+      ],
+      "specialties": [
+        "General Outpatient & Emergency Care",
+        "General Surgery",
+        "Internal Medicine",
+        "Obstetrics & Gynaecology",
+        "Paediatrics",
+        "Laboratory & Diagnostic Imaging"
+      ]
+    },
+    {
+      "name": "Oba Ademola Maternity Hospital",
+      "category": "Public Specialist Maternity Hospital",
+      "address": "Ijemo, Erunwon / Ake Axis, Abeokuta 111101, Ogun State",
+      "coordinates": {
+        "latitude": 7.172444,
+        "longitude": 3.341556
+      },
+      "hotlines": [
+        "+234 806 229 7121"
+      ],
+      "specialties": [
+        "Obstetrics & Gynaecology",
+        "Antenatal & Postnatal Care",
+        "Maternal & Child Health",
+        "Paediatrics & Immunization"
+      ]
+    },
+    {
+      "name": "Olikoye Ransome-Kuti Memorial Hospital",
+      "category": "Public General Hospital",
+      "address": "Asero, Abeokuta 111101, Ogun State",
+      "coordinates": {
+        "latitude": 7.173800,
+        "longitude": 3.377200
+      },
+      "hotlines": [
+        "+234 803 050 7449"
+      ],
+      "specialties": [
+        "General Medicine",
+        "Primary & Secondary Outpatient Care",
+        "Maternal & Child Health",
+        "Emergency Services"
+      ]
+    },
+    {
+      "name": "General Hospital, Iberekodo",
+      "category": "Public General Hospital",
+      "address": "Iberekodo, Abeokuta North, Abeokuta 111106, Ogun State",
+      "coordinates": {
+        "latitude": 7.210200,
+        "longitude": 3.338400
+      },
+      "hotlines": [
+        "+234 803 681 0404",
+        "+234 916 587 0322"
+      ],
+      "specialties": [
+        "General Medicine",
+        "Primary & Secondary Healthcare",
+        "Maternity & Child Welfare",
+        "Basic Surgical & Diagnostic Services"
+      ]
+    },
+    {
+      "name": "Coxwell Specialist Hospital",
+      "category": "Private Multi-Specialty Hospital",
+      "address": "1 Omolaja Badmos Street, Behind Sharfex Gas Station, Leme, Abeokuta 111102, Ogun State",
+      "coordinates": {
+        "latitude": 7.140000,
+        "longitude": 3.370000
+      },
+      "hotlines": [
+        "+234 810 259 9983"
+      ],
+      "specialties": [
+        "Fertility & Assisted Reproductive Technology (IVF, ICSI, IUI)",
+        "Obstetrics & Gynaecology",
+        "General & Specialist Surgery",
+        "Endocrinology",
+        "Orthopaedics",
+        "Urology",
+        "Paediatrics & Family Medicine",
+        "Emergency Care (24/7) & Diagnostics"
+      ]
+    },
+    {
+      "name": "St. Ives Specialist Hospital, Abeokuta",
+      "category": "Private Specialist Hospital",
+      "address": "3 Olatunde Abudu Close, Off Ibara Housing Estate Road, Panseke, Abeokuta 110001, Ogun State",
+      "coordinates": {
+        "latitude": 7.129904,
+        "longitude": 3.335766
+      },
+      "hotlines": [
+        "+234 201 343 9090",
+        "+234 201 330 3387",
+        "+234 817 513 2900"
+      ],
+      "specialties": [
+        "Fertility & IVF Unit",
+        "Obstetrics & Gynaecology",
+        "Paediatrics & Neonatology",
+        "General Surgery",
+        "Internal Medicine & Cardiology Screening",
+        "Family Health & Diagnostics"
+      ]
+    },
+    {
+      "name": "Angel & Eagle Specialist Hospital",
+      "category": "Private Multi-Specialty Hospital",
+      "address": "9B Sikiru Jimoh Road, Beside Wenby's Suites, GRA Ibara, Abeokuta 110001, Ogun State",
+      "coordinates": {
+        "latitude": 7.131500,
+        "longitude": 3.337500
+      },
+      "hotlines": [
+        "+234 811 111 2311",
+        "+234 811 000 0721"
+      ],
+      "specialties": [
+        "Obstetrics & Gynaecology",
+        "General Medicine & Surgery",
+        "Emergency & Advanced Life Support (24/7)",
+        "Paediatrics",
+        "Laboratory & Diagnostic Services"
+      ]
+    },
+    {
+      "name": "Redwood Specialist Hospital",
+      "category": "Private Multi-Specialty Hospital",
+      "address": "5 Oba Osile Road, Ibara / Agbeloba Axis, Abeokuta 111102, Ogun State",
+      "coordinates": {
+        "latitude": 7.132502,
+        "longitude": 3.341203
+      },
+      "hotlines": [
+        "+234 915 382 5444",
+        "+234 809 525 1805"
+      ],
+      "specialties": [
+        "General & Specialist Surgery",
+        "Internal Medicine",
+        "Obstetrics & Gynaecology",
+        "Paediatrics",
+        "Emergency Services (24/7)"
+      ]
+    },
+    {
+      "name": "Careplace Hospital",
+      "category": "Private General & Specialist Hospital",
+      "address": "4 Rasheed Soetan Crescent, Asero, Abeokuta 110115, Ogun State",
+      "coordinates": {
+        "latitude": 7.170000,
+        "longitude": 3.370000
+      },
+      "hotlines": [
+        "+234 806 235 7604",
+        "+234 816 379 9723"
+      ],
+      "specialties": [
+        "General Medicine & Surgery",
+        "Specialist Medical & Surgical Consultations",
+        "Maternity & Gynaecology",
+        "Dental Care",
+        "Emergency Care (24/7) & Diagnostics"
+      ]
+    },
+    {
+      "name": "O & A Medical Centre",
+      "category": "Private General & Specialist Hospital",
+      "address": "HN D2/3, Asero Housing Estate, Asero, Abeokuta, Ogun State",
+      "coordinates": {
+        "latitude": 7.182448,
+        "longitude": 3.379906
+      },
+      "hotlines": [
+        "+234 803 346 0998",
+        "+234 810 798 4580"
+      ],
+      "specialties": [
+        "Obstetrics & Gynaecology (24/7 Maternity)",
+        "Paediatrics",
+        "Outpatient & General Medicine",
+        "Preventive Health Screenings & Chronic Disease Management"
+      ]
+    },
+    {
+      "name": "First Alpha Medical Centre",
+      "category": "Private General Hospital",
+      "address": "11-13 Kuforiji-Olubi Drive, Adigbe Road, Abeokuta 110212, Ogun State",
+      "coordinates": {
+        "latitude": 7.121500,
+        "longitude": 3.324500
+      },
+      "hotlines": [
+        "+234 803 318 1054"
+      ],
+      "specialties": [
+        "Family & General Medicine",
+        "Maternity & Child Health",
+        "General Surgery",
+        "Emergency & Inpatient Care (24/7)"
+      ]
+    },
+    {
+      "name": "Mercy Group Clinics",
+      "category": "Private General Hospital",
+      "address": "Mercy Hospital Road, Behind UBA Building, Panseke, Abeokuta 111102, Ogun State",
+      "coordinates": {
+        "latitude": 7.130200,
+        "longitude": 3.335800
+      },
+      "hotlines": [
+        "+234 810 437 0630"
+      ],
+      "specialties": [
+        "General & Family Medicine",
+        "Outpatient & Inpatient Care (24/7)",
+        "Maternity Services",
+        "Diagnostic & Nursing Services"
+      ]
+    },
+    {
+      "name": "First Contact Hospital and Maternity",
+      "category": "Private General & Maternity Hospital",
+      "address": "33B Kuto Road, Behind Startimes, Kuto, Abeokuta, Ogun State",
+      "coordinates": {
+        "latitude": 7.141200,
+        "longitude": 3.346800
+      },
+      "hotlines": [
+        "+234 802 953 7462"
+      ],
+      "specialties": [
+        "Obstetrics & Maternity Care",
+        "General Medicine",
+        "Paediatrics",
+        "Emergency Care (24/7)"
+      ]
+    },
+    {
+      "name": "Diamond Cross Medical Center",
+      "category": "Private General Hospital",
+      "address": "5/7 Apitipiti Street, Opposite OLG Primary School, Off Abeokuta–Ibadan Road, Obantoko, Abeokuta 110121, Ogun State",
+      "coordinates": {
+        "latitude": 7.179500,
+        "longitude": 3.398200
+      },
+      "hotlines": [
+        "+234 802 268 4480"
+      ],
+      "specialties": [
+        "General Medicine",
+        "Inpatient & Emergency Services (24/7)",
+        "Laboratory & X-Ray Diagnostics"
+      ]
+    },
+    {
+      "name": "Korede Hospital",
+      "category": "Private General Hospital",
+      "address": "26/36 Ogunsanya Street, Kugba, Abeokuta 110118, Ogun State",
+      "coordinates": {
+        "latitude": 7.168500,
+        "longitude": 3.356200
+      },
+      "hotlines": [
+        "+234 803 718 7560",
+        "+234 806 237 4727",
+        "+234 706 733 7839"
+      ],
+      "specialties": [
+        "General Medicine",
+        "Maternity & Child Care",
+        "Outpatient & Inpatient Services (24/7)"
+      ]
+    },
+    {
+      "name": "Access Medical Centre Abeokuta",
+      "category": "Private General Hospital",
+      "address": "Plot 2, Atoke Close, Off Lukosi Road, Behind IBEDC, Off Abiola Way, Abeokuta, Ogun State",
+      "coordinates": {
+        "latitude": 7.125800,
+        "longitude": 3.351200
+      },
+      "hotlines": [
+        "+234 802 643 0981"
+      ],
+      "specialties": [
+        "General Medicine",
+        "Primary & Emergency Care (24/7)"
+      ]
+    },
+    {
+      "name": "Eye Foundation Hospital, Abeokuta",
+      "category": "Private Specialist Eye Hospital",
+      "address": "12 Lalubu Street, Oke-Ilewo, Ibara (and Old Owode Road, Onikolobo), Abeokuta 110101, Ogun State",
+      "coordinates": {
+        "latitude": 7.135904,
+        "longitude": 3.339728
+      },
+      "hotlines": [
+        "+234 705 690 0743",
+        "+234 809 974 2031"
+      ],
+      "specialties": [
+        "Ophthalmology",
+        "Cataract & Glaucoma Surgery",
+        "Retinal Screening & Ocular Motility",
+        "Optometry & Contact Lens Fitting"
+      ]
+    },
+    {
+      "name": "Metroeyes Abeokuta",
+      "category": "Private Specialist Eye Clinic",
+      "address": "75 Olusegun Osoba Road, Opposite Access Bank, Oke-Ilewo by Jide Jones Road, Abeokuta 110252, Ogun State",
+      "coordinates": {
+        "latitude": 7.135904,
+        "longitude": 3.339728
+      },
+      "hotlines": [
+        "+234 803 086 6161"
+      ],
+      "specialties": [
+        "Ophthalmology & Optometry",
+        "Comprehensive Eye Examinations",
+        "Optical Dispensing & Vision Therapy"
+      ]
+    },
+    {
+      "name": "Elohim Eye Specialist Clinic",
+      "category": "Private Specialist Eye Clinic",
+      "address": "Abiola Way, Abeokuta 111101, Ogun State",
+      "coordinates": {
+        "latitude": 7.148500,
+        "longitude": 3.364200
+      },
+      "hotlines": [
+        "+234 803 319 6560"
+      ],
+      "specialties": [
+        "Ophthalmology",
+        "Optometry & Ocular Care"
+      ]
+    },
+    {
+      "name": "Access Dental Clinic (PDDC), Abeokuta",
+      "category": "Private Specialist Dental Hospital/Clinic",
+      "address": "1 Ogo-Oluwa Bankole Crescent, Ibara Housing Estate, Panseke, Abeokuta 110252, Ogun State",
+      "coordinates": {
+        "latitude": 7.132812,
+        "longitude": 3.335820
+      },
+      "hotlines": [
+        "+234 816 169 8780",
+        "+234 912 838 1598"
+      ],
+      "specialties": [
+        "Preventive & Restorative Dentistry",
+        "Orthodontics & Oral Surgery",
+        "Cosmetic Dentistry & Teeth Whitening"
+      ]
+    },
+    {
+      "name": "Prestige Specialist Dental Clinic",
+      "category": "Private Specialist Dental Clinic",
+      "address": "Dorcas Plaza, Quarry Road, Opposite Treasure Church, Apo Village, Aro, Abeokuta 111105, Ogun State",
+      "coordinates": {
+        "latitude": 7.143200,
+        "longitude": 3.331500
+      },
+      "hotlines": [
+        "+234 802 341 7155"
+      ],
+      "specialties": [
+        "General & Specialist Dentistry",
+        "Oral Prophylaxis, Endodontics & Prosthodontics"
+      ]
+    }
+  ]
+}
