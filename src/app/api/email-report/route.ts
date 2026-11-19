@@ -10,6 +10,7 @@ const MAX_BASE64_LENGTH = Math.ceil(MAX_PDF_BYTES / 3) * 4;
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 const MAX_EMAILS_PER_WINDOW = 3;
 const recentEmailRequests = new Map<string, number[]>();
+const trackingIdSchema = z.string().trim().min(1).max(100).regex(/^[A-Z0-9+_-]+$/i);
 
 const emailReportSchema = z.object({
   patientName: z.string().trim().min(1).max(120).refine(
@@ -17,7 +18,7 @@ const emailReportSchema = z.object({
     "Enter a valid name.",
   ),
   email: z.string().trim().email().max(254),
-  trackingId: z.string().regex(/^ENT-\d{4}-[A-Z0-9]{6,12}$/i).optional(),
+  trackingId: trackingIdSchema.optional(),
   pdfBase64: z.string().min(1).max(MAX_BASE64_LENGTH).regex(/^[A-Za-z0-9+/]+={0,2}$/),
 });
 
@@ -79,17 +80,25 @@ export async function POST(request: Request) {
   if (body.error) return invalidRequest(body.error);
   const parsed = emailReportSchema.safeParse(body.data);
   if (!parsed.success) {
-    return invalidRequest(parsed.error.issues[0]?.message ?? "Invalid report email details.");
+    const issue = parsed.error.issues[0];
+    const field = issue?.path.join(".");
+    return invalidRequest(
+      issue
+        ? `${field ? `${field}: ` : ""}${issue.message}`
+        : "Invalid report email details.",
+    );
   }
 
   const pdf = Buffer.from(parsed.data.pdfBase64, "base64");
-  if (
-    pdf.length === 0 ||
-    pdf.length > MAX_PDF_BYTES ||
-    !pdf.subarray(0, 5).equals(Buffer.from("%PDF-")) ||
-    pdf.lastIndexOf(Buffer.from("%%EOF")) < Math.max(0, pdf.length - 1024)
-  ) {
-    return invalidRequest("The report attachment is not a valid PDF.");
+  if (pdf.length === 0) return invalidRequest("The report attachment is empty.");
+  if (pdf.length > MAX_PDF_BYTES) {
+    return invalidRequest("The report PDF must be 5 MB or smaller.");
+  }
+  if (!pdf.subarray(0, 5).equals(Buffer.from("%PDF-"))) {
+    return invalidRequest("The report attachment is not a PDF file.");
+  }
+  if (pdf.lastIndexOf(Buffer.from("%%EOF")) < Math.max(0, pdf.length - 1024)) {
+    return invalidRequest("The generated PDF appears incomplete. Please try again.");
   }
 
   const {
@@ -135,6 +144,7 @@ export async function POST(request: Request) {
   });
   const greetingName = escapeHtml(parsed.data.patientName);
   const reportId = parsed.data.trackingId;
+  const attachmentId = reportId?.replace(/[^A-Z0-9-]/gi, "") || "assessment";
 
   try {
     await transporter.sendMail({
@@ -152,7 +162,7 @@ export async function POST(request: Request) {
       html: `<p>Hello ${greetingName},</p><p>Your requested ENT-Care report is attached as a PDF.</p>${reportId ? `<p>Report ID: <strong>${reportId}</strong></p>` : ""}<p>This report provides preliminary symptom guidance only; it is not a confirmed diagnosis. Please speak with a qualified healthcare professional.</p>`,
       attachments: [
         {
-          filename: `ent-care-report-${reportId ?? "assessment"}.pdf`,
+          filename: `ent-care-report-${attachmentId}.pdf`,
           content: pdf,
           contentType: "application/pdf",
         },

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { forwardEntRequest, invalidRequest, readJsonBody } from "@/lib/ent-service";
+import { normalizeNigerianPhone } from "@/lib/nigerian-phone";
 
 const reportSchema = z.object({
   symptoms: z.string().trim().min(1).max(5000),
@@ -14,6 +15,7 @@ const reportSchema = z.object({
   referralThreshold: z.string().optional(),
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
+  phone: z.string().trim().max(30).optional(),
   patientProfileId: z.string().nullable().optional(),
 });
 
@@ -26,8 +28,17 @@ export async function POST(request: Request) {
     return invalidRequest(parsed.error.issues[0]?.message ?? "Invalid report details.");
   }
 
+  const phone = parsed.data.phone
+    ? normalizeNigerianPhone(parsed.data.phone)
+    : undefined;
+  if (parsed.data.phone && !phone) {
+    return invalidRequest(
+      "Enter a valid Nigerian mobile number, such as 09154996570 or +2349154996570.",
+    );
+  }
+
   return forwardEntRequest("/reports", {
     method: "POST",
-    body: JSON.stringify(parsed.data),
+    body: JSON.stringify({ ...parsed.data, ...(phone ? { phone } : {}) }),
   });
 }

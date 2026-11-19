@@ -21,6 +21,9 @@ export default function PatientPageHeader() {
           <Link href="/">Explore anatomy</Link>
           <Link href="/hospitals">Find care</Link>
           <Link href="/report">Look up a report</Link>
+          <a className="ambulance-link" href="tel:08112000033">
+            Ambulance 08112000033
+          </a>
           <Link className="header-action" href="/">
             Back to home <ArrowLeft aria-hidden="true" size={15} />
           </Link>

@@ -211,6 +211,9 @@ export default function LandingPage() {
           <nav className="site-nav" aria-label="Main navigation">
             <a href="#how-it-works">How it works</a>
             <a href="#model-credits">Model credits</a>
+            <a className="ambulance-link" href="tel:08112000033">
+              Ambulance 08112000033
+            </a>
             <Link className="header-action" href="/assessment">
               Start an assessment <ArrowRight aria-hidden="true" size={16} />
             </Link>

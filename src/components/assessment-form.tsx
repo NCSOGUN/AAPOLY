@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   AlertCircle,
@@ -14,6 +14,7 @@ import {
   Pencil,
   Search,
   Volume2,
+  X,
 } from "lucide-react";
 import { urgencyConfig } from "@/lib/urgency";
 import { downloadPatientReport } from "@/lib/download-report";
@@ -30,6 +31,8 @@ import {
 } from "@/lib/ent-types";
 import { getUserLocation } from "@/lib/geolocation";
 import PatientPageHeader from "@/components/patient-page-header";
+import { voiceLanguages, type VoiceLanguageCode } from "@/lib/voice-languages";
+import { normalizeNigerianPhone } from "@/lib/nigerian-phone";
 
 const areas = [
   {
@@ -91,11 +94,26 @@ async function readApiResponse(response: Response) {
   return data;
 }
 
+async function translateTypedDialect(text: string, language: VoiceLanguageCode) {
+  if (!text.trim() || language === "en") return text;
+  const response = await fetch("/api/voice/translate-text", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text, source_language: language }),
+  });
+  const data = await readApiResponse(response);
+  if (!isRecord(data.data) || typeof data.data.translatedText !== "string") {
+    throw new Error("The translation service did not return English text.");
+  }
+  return data.data.translatedText;
+}
+
 async function saveAssessmentReport(input: {
   symptoms: string;
   area: (typeof areas)[number]["value"] | null;
   duration: string;
   age?: number;
+  phone?: string;
   latitude: number | null;
   longitude: number | null;
   analysisResult: EntAnalysisResult;
@@ -109,6 +127,7 @@ async function saveAssessmentReport(input: {
       ...(input.area ? { affectedArea: input.area } : {}),
       ...(input.duration ? { duration: input.duration } : {}),
       ...(typeof input.age === "number" ? { age: input.age } : {}),
+      ...(input.phone ? { phone: input.phone } : {}),
       ...(input.latitude !== null && input.longitude !== null
         ? { latitude: input.latitude, longitude: input.longitude }
         : {}),
@@ -153,14 +172,25 @@ function fileAsDataUrl(file: File) {
 
 export default function AssessmentForm() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [voiceLanguage, setVoiceLanguage] = useState<VoiceLanguageCode>("en");
+  const [languageModalOpen, setLanguageModalOpen] = useState(true);
+  const [voiceInteraction, setVoiceInteraction] = useState(false);
   const [guidedQuestionIndex, setGuidedQuestionIndex] = useState(0);
+  const [answerIsEnglish, setAnswerIsEnglish] = useState<Record<number, boolean>>({});
+  const [assessmentEnglish, setAssessmentEnglish] = useState<{
+    symptoms: string;
+    duration: string;
+    additionalContext: string;
+  } | null>(null);
   const areaFieldRef = useRef<HTMLFieldSetElement | null>(null);
+  const instructionAudioRef = useRef<HTMLAudioElement | null>(null);
   const [symptoms, setSymptoms] = useState("");
   const [area, setArea] = useState<(typeof areas)[number]["value"] | null>(null);
   const [duration, setDuration] = useState<string>("");
   const [ageInput, setAgeInput] = useState("");
   const [patientName, setPatientName] = useState("");
   const [patientEmail, setPatientEmail] = useState("");
+  const [patientPhone, setPatientPhone] = useState("");
   const [additionalContext, setAdditionalContext] = useState("");
   const [trackingId, setTrackingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -187,8 +217,149 @@ export default function AssessmentForm() {
   const [escalationMessage, setEscalationMessage] = useState<string | null>(null);
   const [isSubmittingEscalation, setIsSubmittingEscalation] = useState(false);
   const [isDownloadingReport, setIsDownloadingReport] = useState(false);
+  const [isSpeakingAssessment, setIsSpeakingAssessment] = useState(false);
+  const [assessmentSpeechError, setAssessmentSpeechError] = useState<string | null>(null);
+  const assessmentAudioRef = useRef<HTMLAudioElement | null>(null);
+  const assessmentAudioUrlRef = useRef<string | null>(null);
 
   const selectedArea = areas.find((option) => option.value === area);
+  const selectedVoiceLanguage =
+    voiceLanguages.find((option) => option.code === voiceLanguage) ?? voiceLanguages[0];
+  const assessmentSpeechText = useMemo(() => {
+    if (!results) return "";
+    const condition =
+      results.analysis?.primaryCondition?.commonName ??
+      results.analysis?.primaryCondition?.name;
+    return [
+      "Your assessment is complete.",
+      "This is guidance and not a confirmed medical diagnosis.",
+      condition ? `A possible cause of your symptoms is ${condition}.` : "",
+      results.clinical?.immediateAction,
+      results.clinical?.patientAdvice,
+      results.clinical?.redFlags?.length
+        ? `Seek urgent medical care if you experience: ${results.clinical.redFlags.join("; ")}.`
+        : "",
+    ]
+      .filter((part): part is string => Boolean(part?.trim()))
+      .join(" ")
+      .slice(0, 5000);
+  }, [results]);
+
+  const speakAssessment = useCallback(async () => {
+    if (!assessmentSpeechText) return;
+    setAssessmentSpeechError(null);
+    setIsSpeakingAssessment(true);
+    try {
+      assessmentAudioRef.current?.pause();
+      if (assessmentAudioUrlRef.current) {
+        URL.revokeObjectURL(assessmentAudioUrlRef.current);
+        assessmentAudioUrlRef.current = null;
+      }
+      const response = await fetch("/api/voice/speak", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: assessmentSpeechText,
+          target_language: voiceLanguage,
+        }),
+      });
+      if (!response.ok) {
+        const body: unknown = await response.json().catch(() => null);
+        const message =
+          isRecord(body) && typeof body.message === "string"
+            ? body.message
+            : "The spoken guidance could not be prepared.";
+        throw new Error(message);
+      }
+      const audioUrl = URL.createObjectURL(await response.blob());
+      assessmentAudioUrlRef.current = audioUrl;
+      const audio = new Audio(audioUrl);
+      assessmentAudioRef.current = audio;
+      audio.onended = () => {
+        URL.revokeObjectURL(audioUrl);
+        if (assessmentAudioUrlRef.current === audioUrl) {
+          assessmentAudioUrlRef.current = null;
+          assessmentAudioRef.current = null;
+        }
+        setIsSpeakingAssessment(false);
+      };
+      await audio.play();
+    } catch (speechError) {
+      setAssessmentSpeechError(
+        speechError instanceof Error
+          ? speechError.message
+          : "The spoken guidance could not be played.",
+      );
+      setIsSpeakingAssessment(false);
+    }
+  }, [assessmentSpeechText, voiceLanguage]);
+
+  useEffect(() => {
+    if (step !== 3 || !voiceInteraction || !assessmentSpeechText) return;
+    void speakAssessment();
+    return () => {
+      assessmentAudioRef.current?.pause();
+      if (assessmentAudioUrlRef.current) {
+        URL.revokeObjectURL(assessmentAudioUrlRef.current);
+        assessmentAudioUrlRef.current = null;
+      }
+    };
+  }, [step, voiceInteraction, assessmentSpeechText, speakAssessment]);
+
+  useEffect(() => {
+    if (!languageModalOpen) return;
+    const audio = new Audio("/audio/instruction_audio.mp3");
+    audio.preload = "auto";
+    instructionAudioRef.current = audio;
+
+    let hasStarted = false;
+    const playInstruction = () => {
+      if (hasStarted) return;
+      hasStarted = true;
+      void audio.play().catch(() => {
+        hasStarted = false;
+      });
+    };
+
+    audio.addEventListener("canplaythrough", playInstruction, { once: true });
+    const timer = window.setTimeout(playInstruction, 500);
+    const retryAfterGesture = (event: PointerEvent) => {
+      const target = event.target;
+      if (target instanceof Element && target.closest(".assessment-language-modal-options")) return;
+      playInstruction();
+    };
+    window.addEventListener("pointerdown", retryAfterGesture, { once: true });
+
+    return () => {
+      window.clearTimeout(timer);
+      audio.removeEventListener("canplaythrough", playInstruction);
+      window.removeEventListener("pointerdown", retryAfterGesture);
+      audio.pause();
+      audio.currentTime = 0;
+      if (instructionAudioRef.current === audio) {
+        instructionAudioRef.current = null;
+      }
+    };
+  }, [languageModalOpen]);
+
+  const chooseVoiceLanguage = (language: (typeof voiceLanguages)[number]) => {
+    const instructionAudio = instructionAudioRef.current;
+    if (instructionAudio) {
+      instructionAudio.pause();
+      instructionAudio.currentTime = 0;
+    }
+    setVoiceLanguage(language.code);
+    setVoiceInteraction(true);
+    setLanguageModalOpen(false);
+  };
+
+  const chooseTyping = () => {
+    const instructionAudio = instructionAudioRef.current;
+    instructionAudio?.pause();
+    if (instructionAudio) instructionAudio.currentTime = 0;
+    setVoiceInteraction(false);
+    setLanguageModalOpen(false);
+  };
 
   const urgency = useMemo(() => {
     const level = results?.clinical?.urgencyLevel as keyof typeof urgencyConfig | undefined;
@@ -225,10 +396,11 @@ export default function AssessmentForm() {
     if (guidedQuestionIndex > 0) setGuidedQuestionIndex((current) => current - 1);
   };
 
-  const confirmGuidedAnswer = (index: number, answer: string) => {
+  const confirmGuidedAnswer = (index: number, answer: string, isEnglish: boolean) => {
     if (index === 0) setSymptoms(answer);
     if (index === 1) setDuration(answer);
     if (index === 2) setAdditionalContext(answer);
+    setAnswerIsEnglish((current) => ({ ...current, [index]: isEnglish }));
     setError(null);
     setGuidedQuestionIndex(index + 1);
   };
@@ -236,6 +408,7 @@ export default function AssessmentForm() {
   const skipGuidedAnswer = (index: number) => {
     if (index === 1) setDuration("");
     if (index === 2) setAdditionalContext("");
+    setAnswerIsEnglish((current) => ({ ...current, [index]: true }));
     setError(null);
     setGuidedQuestionIndex(index + 1);
   };
@@ -248,6 +421,7 @@ export default function AssessmentForm() {
   const speakAreaQuestion = () => {
     if (!speakQuestionAloud(
       "Where are you experiencing symptoms? Choose ear, nose, or throat, or leave this open if you are not sure.",
+      selectedVoiceLanguage.locale,
     )) {
       setError("Spoken questions are not available in this browser. The written question is still available.");
     }
@@ -273,6 +447,15 @@ export default function AssessmentForm() {
       return;
     }
 
+    const normalizedPhone = patientPhone.trim()
+      ? normalizeNigerianPhone(patientPhone) ?? undefined
+      : undefined;
+    if (patientPhone.trim() && !normalizedPhone) {
+      setError("Enter a valid Nigerian mobile number, such as 09154996570 or +2349154996570.");
+      setStep(2);
+      return;
+    }
+
     if (imageBase64 && !imageConsent) {
       setError("Please confirm the image-use notice before submitting your photo.");
       return;
@@ -284,16 +467,34 @@ export default function AssessmentForm() {
     setImageError(null);
 
     try {
+      const [analysisSymptoms, analysisDuration, analysisAdditionalContext] =
+        await Promise.all([
+          answerIsEnglish[0] === false
+            ? translateTypedDialect(symptoms, voiceLanguage)
+            : symptoms,
+          answerIsEnglish[1] === false
+            ? translateTypedDialect(duration, voiceLanguage)
+            : duration,
+          answerIsEnglish[2] === false
+            ? translateTypedDialect(additionalContext, voiceLanguage)
+            : additionalContext,
+        ]);
+      setAssessmentEnglish({
+        symptoms: analysisSymptoms,
+        duration: analysisDuration,
+        additionalContext: analysisAdditionalContext,
+      });
+
       const response = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          symptoms,
+          symptoms: analysisSymptoms,
           ...(area ? { affectedArea: area } : {}),
-          ...(duration ? { duration } : {}),
+          ...(analysisDuration ? { duration: analysisDuration } : {}),
           ...(typeof age === "number" ? { age } : {}),
-          ...(additionalContext.trim()
-            ? { additionalContext: additionalContext.trim() }
+          ...(analysisAdditionalContext.trim()
+            ? { additionalContext: analysisAdditionalContext.trim() }
             : {}),
           ...(latitude !== null && longitude !== null ? { latitude, longitude } : {}),
         }),
@@ -310,10 +511,11 @@ export default function AssessmentForm() {
       try {
         setTrackingId(
           await saveAssessmentReport({
-            symptoms,
+            symptoms: analysisSymptoms,
             area,
-            duration,
+            duration: analysisDuration,
             age,
+            phone: normalizedPhone,
             latitude,
             longitude,
             analysisResult,
@@ -335,8 +537,8 @@ export default function AssessmentForm() {
             body: JSON.stringify({
               imageBase64,
               imageType: area ?? "general",
-              ...(additionalContext.trim()
-                ? { additionalContext: additionalContext.trim() }
+              ...(analysisAdditionalContext.trim()
+                ? { additionalContext: analysisAdditionalContext.trim() }
                 : {}),
               consent: true,
             }),
@@ -370,9 +572,10 @@ export default function AssessmentForm() {
     try {
       setTrackingId(
         await saveAssessmentReport({
-          symptoms,
+          symptoms: assessmentEnglish?.symptoms ?? symptoms,
           area,
-          duration,
+          duration: assessmentEnglish?.duration ?? duration,
+          phone: patientPhone.trim() ? normalizeNigerianPhone(patientPhone) ?? undefined : undefined,
           ...(ageInput.trim() ? { age: Number(ageInput) } : {}),
           latitude,
           longitude,
@@ -548,6 +751,96 @@ export default function AssessmentForm() {
     <main className="assessment-page">
       <PatientPageHeader />
 
+      {languageModalOpen && (
+        <div className="assessment-language-modal-backdrop" role="presentation">
+          <section
+            className="assessment-language-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="language-modal-title"
+          >
+            <button
+              type="button"
+              className="assessment-language-modal-close"
+              onClick={chooseTyping}
+              aria-label="Close language selection and type instead"
+            >
+              <X aria-hidden="true" size={18} />
+            </button>
+            <div className="assessment-language-modal-heading">
+              <span>WELCOME TO ENT-CARE</span>
+              <h2 id="language-modal-title">Choose how you want to speak</h2>
+              <p>
+                Listen to the instructions, then press the button for your language.
+              </p>
+            </div>
+            <div className="assessment-language-modal-options" role="radiogroup" aria-label="Choose language">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={voiceLanguage === "en"}
+                className="language-option language-option-green"
+                onClick={() => chooseVoiceLanguage(voiceLanguages[0])}
+              >
+                <span className="language-option-key">PRESS GREEN</span>
+                <strong>English</strong>
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={voiceLanguage === "yo"}
+                className="language-option language-option-black"
+                onClick={() => chooseVoiceLanguage(voiceLanguages[1])}
+              >
+                <span className="language-option-key">TE ALÁWO DUDU</span>
+                <strong>Yorùbá</strong>
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={voiceLanguage === "ig"}
+                className="language-option language-option-red"
+                onClick={() => chooseVoiceLanguage(voiceLanguages[2])}
+              >
+                <span className="language-option-key">PRESS RED</span>
+                <strong>Igbo</strong>
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={voiceLanguage === "ha"}
+                className="language-option language-option-blue"
+                onClick={() => chooseVoiceLanguage(voiceLanguages[3])}
+              >
+                <span className="language-option-key">PRESS BLUE</span>
+                <strong>Hausa</strong>
+              </button>
+            </div>
+            <button
+              type="button"
+              className="assessment-language-hear-again"
+              onClick={() => {
+                const audio = instructionAudioRef.current;
+                if (!audio) return;
+                audio.pause();
+                audio.currentTime = 0;
+                void audio.play().catch(() => undefined);
+              }}
+            >
+              <Volume2 aria-hidden="true" size={16} />
+              Hear instructions again
+            </button>
+            <button
+              type="button"
+              className="assessment-language-type-choice"
+              onClick={chooseTyping}
+            >
+              I prefer typing
+            </button>
+          </section>
+        </div>
+      )}
+
       <div className="assessment-shell">
         <div className="assessment-intro">
           <div className="assessment-intro-copy">
@@ -566,7 +859,9 @@ export default function AssessmentForm() {
               {step === 3
                 ? "Review your guidance and the care options available to you."
                 : step === 1
-                  ? "We’ll read each question aloud. Speak or type your answer, then check it before moving on."
+                  ? voiceInteraction
+                    ? "We’ll read each question aloud. Speak or type your answer, then check it before moving on."
+                    : "Type your answers in your chosen language, then review them before moving on."
                   : "A few more details can help make your guidance more relevant."}
             </p>
           </div>
@@ -598,6 +893,29 @@ export default function AssessmentForm() {
 
             {step === 1 && (
               <div className="assessment-fields">
+                <section className="assessment-language-picker" aria-label="Choose a language">
+                  <div>
+                    <span className="assessment-field-heading">
+                      <span className="assessment-field-number">00</span>
+                      Choose your language
+                    </span>
+                    <p>Voice and listening can use this language.</p>
+                  </div>
+                  <div className="assessment-language-options" role="radiogroup" aria-label="Assessment language">
+                    {voiceLanguages.map((language) => (
+                      <button
+                        type="button"
+                        role="radio"
+                        aria-checked={voiceLanguage === language.code}
+                        className={voiceLanguage === language.code ? "is-active" : ""}
+                        key={language.code}
+                        onClick={() => setVoiceLanguage(language.code)}
+                      >
+                        {language.label}
+                      </button>
+                    ))}
+                  </div>
+                </section>
                 <div className="assessment-region-heading">
                   <p id="assessment-area-question" className="assessment-field-heading">
                     <span className="assessment-field-number">01</span>
@@ -662,6 +980,14 @@ export default function AssessmentForm() {
                     return (
                       <VoiceQuestion
                         key={guidedQuestionIndex}
+                        languageCode={voiceLanguage}
+                        languageLocale={selectedVoiceLanguage.locale}
+                        enabled={!languageModalOpen}
+                        voiceInteraction={voiceInteraction}
+                        initialAnswerIsEnglish={
+                          answerIsEnglish[guidedQuestionIndex] ??
+                          (voiceLanguage === "en")
+                        }
                         questionNumber={`0${guidedQuestionIndex + 2}`}
                         question={question.question}
                         prompt={question.prompt}
@@ -676,7 +1002,9 @@ export default function AssessmentForm() {
                         maxLength={question.maxLength}
                         required={guidedQuestionIndex === 0}
                         quickAnswers={"quickAnswers" in question ? question.quickAnswers : []}
-                        onConfirm={(answer) => confirmGuidedAnswer(guidedQuestionIndex, answer)}
+                        onConfirm={(answer, isEnglish) =>
+                          confirmGuidedAnswer(guidedQuestionIndex, answer, isEnglish)
+                        }
                         onSkip={
                           guidedQuestionIndex > 0
                             ? () => skipGuidedAnswer(guidedQuestionIndex)
@@ -777,9 +1105,30 @@ export default function AssessmentForm() {
                   </div>
                 </div>
 
+                <div className="assessment-input-field">
+                  <label className="assessment-field-heading" htmlFor="patient-phone">
+                    <span className="assessment-field-number">02</span>
+                    Phone number <span className="assessment-optional-label">(optional)</span>
+                  </label>
+                  <p className="assessment-field-hint">
+                    Save reports under this Nigerian mobile number so you can find them again. Example: 09154996570.
+                  </p>
+                  <input
+                    id="patient-phone"
+                    type="tel"
+                    inputMode="tel"
+                    value={patientPhone}
+                    onChange={(event) => setPatientPhone(event.target.value)}
+                    maxLength={30}
+                    autoComplete="tel"
+                    className="assessment-text-input"
+                    placeholder="09154996570 or +2349154996570"
+                  />
+                </div>
+
                 <div className="assessment-input-field assessment-age-field">
                   <label className="assessment-field-heading" htmlFor="patient-age">
-                    <span className="assessment-field-number">02</span>
+                    <span className="assessment-field-number">03</span>
                     Age <span className="assessment-optional-label">(optional)</span>
                   </label>
                   <p className="assessment-field-hint">
@@ -802,7 +1151,7 @@ export default function AssessmentForm() {
 
                 <div className="assessment-input-field">
                   <label className="assessment-field-heading" htmlFor="context">
-                    <span className="assessment-field-number">03</span>
+                    <span className="assessment-field-number">04</span>
                     Is there anything else we should know?
                   </label>
                   <p className="assessment-field-hint">
@@ -812,7 +1161,13 @@ export default function AssessmentForm() {
                     id="context"
                     rows={6}
                     value={additionalContext}
-                    onChange={(event) => setAdditionalContext(event.target.value)}
+                    onChange={(event) => {
+                      setAdditionalContext(event.target.value);
+                      setAnswerIsEnglish((current) => ({
+                        ...current,
+                        2: voiceLanguage === "en",
+                      }));
+                    }}
                     className="assessment-textarea"
                     placeholder="For example: right ear; symptoms began after a cold; I take…; I am allergic to…"
                   />
@@ -939,6 +1294,25 @@ export default function AssessmentForm() {
                       "The service did not provide an immediate action. Please contact a qualified healthcare professional for advice."}
                   </p>
                 </div>
+
+                {voiceInteraction && (
+                  <div className="assessment-result-speech">
+                    <button
+                      type="button"
+                      className="assessment-voice-replay"
+                      onClick={() => void speakAssessment()}
+                      disabled={isSpeakingAssessment}
+                    >
+                      <Volume2 aria-hidden="true" size={17} />
+                      {isSpeakingAssessment ? "Speaking guidance…" : "Hear this guidance"}
+                    </button>
+                    {assessmentSpeechError && (
+                      <p className="assessment-inline-status" role="alert">
+                        {assessmentSpeechError}
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {reportError && (
                   <div className="assessment-error" role="alert">

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   AlertCircle,
@@ -14,9 +14,13 @@ import EmailReportForm from "@/components/email-report-form";
 import { EntAnalysisResult, SavedEntReport, getAnalysisResult, getSavedReport, isRecord } from "@/lib/ent-types";
 import { urgencyConfig } from "@/lib/urgency";
 import PatientPageHeader from "@/components/patient-page-header";
+import { normalizeNigerianPhone } from "@/lib/nigerian-phone";
 
-async function fetchReport(trackingId: string): Promise<SavedEntReport> {
-  const response = await fetch(`/api/report/${encodeURIComponent(trackingId)}`, {
+const REPORT_VERIFICATION_CODE = "991549";
+const reportIdPattern = /^(?:ENT-\d{4}-[A-Z0-9]{6,12}|\+234\d{10}-[A-Z0-9]{6})$/i;
+
+async function fetchReports(lookupId: string): Promise<SavedEntReport[]> {
+  const response = await fetch(`/api/report/${encodeURIComponent(lookupId)}`, {
     cache: "no-store",
   });
   const body: unknown = await response.json().catch(() => null);
@@ -28,9 +32,18 @@ async function fetchReport(trackingId: string): Promise<SavedEntReport> {
       typeof body.message === "string" ? body.message : "The report could not be found.",
     );
   }
+  const data = body.data;
+  if (isRecord(data) && Array.isArray(data.reports)) {
+    const reports = data.reports.flatMap((item) => {
+      const report = getSavedReport({ data: item });
+      return report ? [report] : [];
+    });
+    if (reports.length) return reports;
+    throw new Error("No saved reports were found for this phone number.");
+  }
   const report = getSavedReport(body);
   if (!report) throw new Error("The service returned an incomplete report.");
-  return report;
+  return [report];
 }
 
 function ReportDetails({ report }: { report: SavedEntReport }) {
@@ -155,7 +168,7 @@ function ReportDetails({ report }: { report: SavedEntReport }) {
 }
 
 function ReportContent({ trackingId }: { trackingId: string }) {
-  const [report, setReport] = useState<SavedEntReport | null>(null);
+  const [reports, setReports] = useState<SavedEntReport[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -163,9 +176,9 @@ function ReportContent({ trackingId }: { trackingId: string }) {
     let active = true;
     setLoading(true);
     setError(null);
-    fetchReport(trackingId)
-      .then((loadedReport) => {
-        if (active) setReport(loadedReport);
+    fetchReports(trackingId)
+      .then((loadedReports) => {
+        if (active) setReports(loadedReports);
       })
       .catch((loadError: unknown) => {
         if (active) {
@@ -190,7 +203,7 @@ function ReportContent({ trackingId }: { trackingId: string }) {
     );
   }
 
-  if (error || !report) {
+  if (error || !reports?.length) {
     return (
       <div className="assessment-error" role="alert">
         <AlertCircle aria-hidden="true" size={18} />
@@ -199,23 +212,85 @@ function ReportContent({ trackingId }: { trackingId: string }) {
     );
   }
 
-  return <ReportDetails report={report} />;
+  return (
+    <div className="assessment-report-list">
+      {reports.length > 1 && (
+        <p className="assessment-field-hint">
+          Found {reports.length} reports linked to this phone number, newest first.
+        </p>
+      )}
+      {reports.map((report, index) => (
+        <section className="assessment-report-list-item" key={report.id ?? report.trackingId ?? index}>
+          {reports.length > 1 && (
+            <p className="assessment-result-index">
+              REPORT {index + 1}
+              {report.createdAt
+                ? ` · ${new Date(report.createdAt).toLocaleDateString()}`
+                : ""}
+            </p>
+          )}
+          <ReportDetails report={report} />
+        </section>
+      ))}
+    </div>
+  );
 }
 
 export function ReportLookupPage() {
   const [trackingId, setTrackingId] = useState("");
   const [submittedId, setSubmittedId] = useState("");
+  const [pendingPhone, setPendingPhone] = useState("");
+  const [isPreparingOtp, setIsPreparingOtp] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [otpError, setOtpError] = useState<string | null>(null);
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
+  const otpDelayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (otpDelayTimerRef.current) clearTimeout(otpDelayTimerRef.current);
+  }, []);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const normalized = trackingId.trim().toUpperCase();
-    if (!/^ENT-\d{4}-[A-Z0-9]{6,12}$/.test(normalized)) {
-      setValidationMessage("Enter the report ID in the format ENT-2026-A3F9C2D1.");
+    const input = trackingId.trim();
+    const phone = normalizeNigerianPhone(input);
+    if (phone) {
+      if (otpDelayTimerRef.current) clearTimeout(otpDelayTimerRef.current);
+      setValidationMessage(null);
+      setSubmittedId("");
+      setPendingPhone(phone);
+      setIsPreparingOtp(true);
+      setOtp("");
+      setOtpError(null);
+      otpDelayTimerRef.current = setTimeout(() => {
+        otpDelayTimerRef.current = null;
+        setIsPreparingOtp(false);
+      }, 900);
       return;
     }
+
+    const normalized = input.toUpperCase();
+    if (!reportIdPattern.test(normalized)) {
+      setValidationMessage("Enter a Nigerian mobile number or a report ID such as ENT-2026-A3F9C2D1.");
+      return;
+    }
+    if (otpDelayTimerRef.current) clearTimeout(otpDelayTimerRef.current);
+    otpDelayTimerRef.current = null;
+    setIsPreparingOtp(false);
     setValidationMessage(null);
+    setPendingPhone("");
     setSubmittedId(normalized);
+  };
+
+  const handleVerifyOtp = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (otp.trim() !== REPORT_VERIFICATION_CODE) {
+      setOtpError("That code is incorrect. Check your message and try again.");
+      return;
+    }
+    setOtpError(null);
+    setSubmittedId(pendingPhone);
+    setPendingPhone("");
   };
 
   return (
@@ -227,7 +302,7 @@ export function ReportLookupPage() {
             <p className="assessment-eyebrow"><span className="eyebrow-rule" /> REPORT ACCESS</p>
             <h1>Find your saved report.</h1>
             <p className="assessment-lede">
-              Enter the report ID you received after your assessment to review or download your guidance.
+              Enter your phone number to securely access your saved reports, or use a report ID.
             </p>
           </div>
         </div>
@@ -236,10 +311,10 @@ export function ReportLookupPage() {
             <form className="assessment-report-lookup" onSubmit={handleSubmit}>
               <label className="assessment-field-heading" htmlFor="report-id">
                 <span className="assessment-field-number">01</span>
-                Report ID
+                Phone number or report ID
               </label>
               <p className="assessment-field-hint">
-                Example: ENT-2026-A3F9C2D1. Report IDs are not case-sensitive.
+                Use the Nigerian mobile number linked to your report, or enter a report ID.
               </p>
               <input
                 id="report-id"
@@ -249,16 +324,71 @@ export function ReportLookupPage() {
                 className="assessment-text-input"
                 autoComplete="off"
                 spellCheck={false}
-                placeholder="ENT-2026-A3F9C2D1"
+                placeholder="09154996570 or ENT-2026-A3F9C2D1"
               />
               {validationMessage && (
                 <p className="assessment-inline-status" role="alert">{validationMessage}</p>
               )}
-              <button type="submit" className="assessment-continue-button">
-                <FileSearch aria-hidden="true" size={16} />
-                Find report
+              <button type="submit" className="assessment-continue-button" disabled={isPreparingOtp}>
+                {isPreparingOtp
+                  ? <LoaderCircle aria-hidden="true" size={16} />
+                  : <FileSearch aria-hidden="true" size={16} />}
+                {isPreparingOtp ? "Checking your number…" : "Continue"}
               </button>
             </form>
+
+            {isPreparingOtp && (
+              <div className="assessment-otp-preparing" role="status" aria-live="polite">
+                <LoaderCircle aria-hidden="true" size={20} />
+                <span>Preparing phone verification…</span>
+              </div>
+            )}
+
+            {pendingPhone && !isPreparingOtp && (
+              <form className="assessment-demo-otp" onSubmit={handleVerifyOtp}>
+                <span className="assessment-result-index">PHONE VERIFICATION</span>
+                <h2>Enter your verification code</h2>
+                <p>
+                  A verification OTP has been sent to your phone number.
+                </p>
+                <label className="assessment-field-heading" htmlFor="report-otp">
+                  Verification code
+                </label>
+                <input
+                  id="report-otp"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  pattern="[0-9]{6}"
+                  maxLength={6}
+                  value={otp}
+                  onChange={(event) => {
+                    setOtp(event.target.value.replace(/\D/g, "").slice(0, 6));
+                    setOtpError(null);
+                  }}
+                  className="assessment-text-input assessment-otp-input"
+                  placeholder="6-digit code"
+                  required
+                />
+                {otpError && <p className="assessment-inline-status" role="alert">{otpError}</p>}
+                <div className="assessment-demo-otp-actions">
+                  <button type="submit" className="assessment-continue-button">
+                    Verify and find reports
+                  </button>
+                  <button
+                    type="button"
+                    className="assessment-back-button"
+                    onClick={() => {
+                      setPendingPhone("");
+                      setOtp("");
+                      setOtpError(null);
+                    }}
+                  >
+                    Change phone number
+                  </button>
+                </div>
+              </form>
+            )}
 
             {submittedId && (
               <div className="assessment-saved-report">
@@ -272,8 +402,8 @@ export function ReportLookupPage() {
               <div className="assessment-report-illustration" aria-hidden="true">
                 <FileSearch size={48} strokeWidth={1.4} />
               </div>
-              <h2>Your ID is your key.</h2>
-              <p>Keep your report ID somewhere safe so you can return to this guidance later.</p>
+              <h2>Your phone, your reports.</h2>
+              <p>Verify the phone number linked to your report to find saved guidance.</p>
             </div>
             <div className="assessment-side-note">
               <span className="assessment-note-mark" aria-hidden="true">i</span>
